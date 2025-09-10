@@ -30,5 +30,5 @@ It is named after the bridge outside the Google Cambridge office.
 
 ## Ongoing Security Reviews
 
-This project is currently undergoing two independent security reviews by panels of academic and industry experts in the field. Their reports will be made public on this repo when completed, targetted for Aug 25th.
+This project is currently undergoing two independent security reviews by panels of academic and industry experts in the field. See [reviews](docs/reviews) for the latest.
 
