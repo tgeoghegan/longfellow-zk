@@ -30,10 +30,10 @@ cd <root-of-the-repository>/reference/verifier-service/server
 $ go build 
 ```
 
-This creates a `server` binary in the directory. You can start it
+This creates a `server` binary in the directory. You can start it and give it the circuits folder from the main Longfellow ZK library
 
 ```
-$ ./server
+$ ./server -circuit_dir ../../../lib/circuits/mdoc/circuits
 2025/09/09 19:53:24 Reading from dir circuits
 2025/09/09 19:53:25 Read 31bc7c86c71871dad73619e7da7c5a379221602a3f28ea991b05da1ef656d13c
 2025/09/09 19:53:26 Read 3546d1e1a59142ded29a26d30ae4155d682b0f7f2b1a78a1cc63f94b211cbda0
