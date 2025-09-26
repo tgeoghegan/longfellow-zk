@@ -25,7 +25,7 @@ the inclusion of `zk_system_type` and `verifier_message`, which are defined in t
         "zk_system_type": [
          {
           "system": "longfellow-libzk-v1",
-           "circuit_hash": "2b8e0c49b08eb1801b9bd7a82aa9eb3736a7519fc2b4099df5a92353fbfc55ae",
+           "circuit_hash": "f88a39e561ec0be02bb3dfe38fb609ad154e98decbbe632887d850fc612fea6f",
            "num_attributes": 1,
            "version": 1
          }
