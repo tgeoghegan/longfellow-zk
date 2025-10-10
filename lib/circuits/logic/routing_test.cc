@@ -41,6 +41,14 @@ using Logic = Logic<Field, EvaluationBackend>;
 using BitW = Logic::BitW;
 using EltW = Logic::EltW;
 
+template <size_t N>
+void expect_vequal(const Logic& L, const Logic::bitvec<N>& a,
+                   const Logic::bitvec<N>& b) {
+  for (size_t i = 0; i < N; ++i) {
+    EXPECT_EQ(L.eval(a[i]), L.eval(b[i]));
+  }
+}
+
 static void one_test(size_t logn, size_t n, size_t k, size_t shift,
                      size_t unroll, bool unshift, const Logic& L) {
   const Routing<Logic> R(L);
@@ -116,7 +124,7 @@ static void one_test(size_t logn, size_t n, size_t k, size_t shift,
   for (size_t i = 0; i < k; ++i) {
     EXPECT_EQ(L.eval(lgot[i]), L.eval(lwant[i]));
     EXPECT_EQ(bgot[i], bwant[i]);
-    EXPECT_TRUE(L.vequal(&bvgot[i], bvwant[i]));
+    expect_vequal(L, bvgot[i], bvwant[i]);
   }
 }
 
@@ -169,10 +177,10 @@ TEST(Routing, EltCircuitSize) {
         std::vector<EltWC> a(n);
         std::vector<EltWC> b(k);
         for (size_t i = 0; i < logn; ++i) {
-          amount[i] = BitWC(Q.input(), F);
+          amount[i] = LC.input();
         }
         for (size_t i = 0; i < n; ++i) {
-          a[i] = Q.input();
+          a[i] = LC.eltw_input();
         }
         if (unshift) {
           RC.unshift(logn, amount.data(), k, b.data(), n, a.data(), LC.konst(0),
@@ -182,7 +190,7 @@ TEST(Routing, EltCircuitSize) {
                    unroll);
         }
         for (size_t i = 0; i < k; ++i) {
-          Q.output(b[i], i);
+          LC.output(b[i], i);
         }
 
         auto CIRCUIT = Q.mkcircuit(/*nc=*/1);
@@ -207,10 +215,10 @@ TEST(Routing, BitCircuitSize) {
         std::vector<BitWC> a(n);
         std::vector<BitWC> b(k);
         for (size_t i = 0; i < logn; ++i) {
-          amount[i] = BitWC(Q.input(), F);
+          amount[i] = LC.input();
         }
         for (size_t i = 0; i < n; ++i) {
-          a[i] = BitWC(Q.input(), F);
+          a[i] = LC.input();
         }
         if (unshift) {
           RC.unshift(logn, amount.data(), k, b.data(), n, a.data(), LC.bit(0),
@@ -220,7 +228,7 @@ TEST(Routing, BitCircuitSize) {
                    unroll);
         }
         for (size_t i = 0; i < k; ++i) {
-          Q.output(LC.eval(b[i]), i);
+          LC.output(b[i], i);
         }
 
         auto CIRCUIT = Q.mkcircuit(/*nc=*/1);

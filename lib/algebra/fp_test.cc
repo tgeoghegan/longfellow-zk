@@ -18,8 +18,13 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "algebra/bogorng.h"
 #include "algebra/fp_p128.h"
 #include "algebra/fp_p256.h"
+#include "algebra/fp_p384.h"
+#include "algebra/fp_p521.h"
+#include "algebra/nat.h"
+#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 
 namespace proofs {
@@ -182,6 +187,46 @@ void of_scalar(const Field& F) {
   }
 }
 
+template <size_t WX, class Field>
+void reduce(const Field& F) {
+  auto e = F.one();
+  const Nat<WX> one(1);
+  Nat<WX> n(1);
+
+  // test all 2^i and 2^i - 1
+  for (size_t i = 0; i < Nat<WX>::kBits; ++i) {
+    auto x = F.reduce(n);
+    EXPECT_EQ(x, e);
+
+    auto em1 = F.subf(e, F.of_scalar(1));
+    auto nm1 = n;
+    nm1.sub(one);
+    auto xm1 = F.reduce(nm1);
+    EXPECT_EQ(xm1, em1);
+
+    F.add(e, e);
+    n.add(n);
+  }
+}
+
+template <class Field>
+void dot(const Field& F) {
+  constexpr size_t n = 20;
+  std::vector<Nat<1>> e(n);
+  std::vector<typename Field::NatScaledForDot> d(n);
+
+  uint64_t want = 0;
+  for (size_t i = 0; i < n; ++i) {
+    uint64_t ei = i * i + 3;
+    uint64_t di = i + 7;
+    e[i] = Nat<1>(ei);
+    d[i] = F.prescale_for_dot(F.of_scalar(di));
+    want += ei * di;
+  }
+  auto got = F.dot(n, e.data(), d.data());
+  EXPECT_EQ(got, F.of_scalar(want));
+}
+
 // test add/sub around the -1..0 boundary in raw (not montgomery)
 // space where wraparound occurs
 template <class Field>
@@ -239,6 +284,14 @@ void onefield(const Field& F) {
   inverse(F);
   of_scalar(F);
   poly_evaluation_points(F);
+  dot(F);
+  reduce<1>(F);
+  reduce<2>(F);
+  reduce<3>(F);
+  reduce<4>(F);
+  reduce<5>(F);
+  reduce<6>(F);
+  reduce<30>(F);
 
   EXPECT_EQ(F.zero(), F.addf(F.one(), F.mone()));
   EXPECT_EQ(F.one(), F.addf(F.half(), F.half()));
@@ -265,6 +318,15 @@ TEST(Fp, AllSizes) {
             "45721771497210611414266254884915640806627990306499"));
   onefield(Fp256<>());
   onefield(Fp128<>());
+  onefield(Fp384<>());
+  onefield(Fp521<>());
+
+  // Our field implementation "works" in a ring.
+  // 3906555671 * 4254597877 = 16620823464218910467
+  onefield(Fp<1>("16620823464218910467"));
+  // 1057848127303065953 * 2108036397730900859 =
+  // 2229982355626334583552843599381353627
+  onefield(Fp<2>("2229982355626334583552843599381353627"));
 }
 
 TEST(Fp, SmallField) {
@@ -324,6 +386,84 @@ TEST(Fp, castable) {
   EXPECT_TRUE(F.of_bytes_field(b));
 }
 
+// ======= Benchmarks ============
+
+template <class Field>
+void bench_add(const Field& F, benchmark::State& state) {
+  Bogorng<Field> rng(&F);
+  auto a = rng.next();
+  for (auto _ : state) {
+    a = F.addf(a, a);
+    benchmark::DoNotOptimize(a);
+  }
+}
+
+template <class Field>
+void bench_mul(const Field& F, benchmark::State& state) {
+  Bogorng<Field> rng(&F);
+  auto a = rng.next();
+  for (auto _ : state) {
+    a = F.mulf(a, a);
+    benchmark::DoNotOptimize(a);
+  }
+}
+
+void BM_Fp1_add(benchmark::State& state) {
+  const Fp<1> F("18446744073709551557");
+  bench_add(F, state);
+}
+BENCHMARK(BM_Fp1_add);
+
+void BM_p256_add(benchmark::State& state) {
+  const Fp256<true> F;
+  bench_add(F, state);
+}
+BENCHMARK(BM_p256_add);
+
+void BM_p384_add(benchmark::State& state) {
+  const Fp384<true> F;
+  bench_add(F, state);
+}
+BENCHMARK(BM_p384_add);
+
+void BM_p521_add(benchmark::State& state) {
+  const Fp521<true> F;
+  bench_add(F, state);
+}
+BENCHMARK(BM_p521_add);
+
+void BM_Fp1_mul(benchmark::State& state) {
+  const Fp<1> F("18446744073709551557");
+  bench_mul(F, state);
+}
+BENCHMARK(BM_Fp1_mul);
+
+void BM_p256_mul(benchmark::State& state) {
+  const Fp256<true> F;
+  bench_mul(F, state);
+}
+BENCHMARK(BM_p256_mul);
+
+void BM_p384_mul(benchmark::State& state) {
+  const Fp384<true> F;
+  bench_mul(F, state);
+}
+BENCHMARK(BM_p384_mul);
+
+// Bench
+void BM_p384_mul_normal(benchmark::State& state) {
+  const Fp<6, true> F(
+      "394020061963944792122790401001436138050797392704654466679482934042457217"
+      "71496870329047266088258938001861606973112319");
+  bench_mul(F, state);
+}
+BENCHMARK(BM_p384_mul_normal);
+
+void BM_p521_mul(benchmark::State& state) {
+  const Fp521<true> F;
+  bench_mul(F, state);
+}
+BENCHMARK(BM_p521_mul);
 
 }  // namespace
 }  // namespace proofs

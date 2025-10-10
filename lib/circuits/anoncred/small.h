@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "circuits/anoncred/small_io.h"
-#include "circuits/compiler/compiler.h"
 #include "circuits/ecdsa/verify_circuit.h"
 #include "circuits/logic/bit_plucker.h"
 #include "circuits/logic/memcmp.h"
@@ -77,13 +76,13 @@ class Small {
     v8 nb_; /* index of sha block that contains the real hash  */
     ShaBlockWitness sig_sha_[kMaxSHABlocks];
 
-    void input(QuadCircuit<Field>& Q, const LogicCircuit& lc) {
-      e_ = Q.input();
-      dpkx_ = Q.input();
-      dpky_ = Q.input();
+    void input(const LogicCircuit& lc) {
+      e_ = lc.eltw_input();
+      dpkx_ = lc.eltw_input();
+      dpky_ = lc.eltw_input();
 
-      sig_.input(Q);
-      dpk_sig_.input(Q);
+      sig_.input(lc);
+      dpk_sig_.input(lc);
 
       nb_ = lc.template vinput<8>();
 
@@ -92,7 +91,7 @@ class Small {
         in_[i] = lc.template vinput<8>();
       }
       for (size_t j = 0; j < kMaxSHABlocks; j++) {
-        sig_sha_[j].input(Q);
+        sig_sha_[j].input(lc);
       }
     }
   };
@@ -165,7 +164,7 @@ class Small {
                         const v8 want[/*max*/]) const {
     for (size_t j = 0; j < max; ++j) {
       auto ll = lc_.vlt(j, vlen);
-      auto cmp = lc_.veq(got[j], want[j]);
+      auto cmp = lc_.veq(&got[j], want[j]);
       lc_.assert_implies(&ll, cmp);
     }
   }

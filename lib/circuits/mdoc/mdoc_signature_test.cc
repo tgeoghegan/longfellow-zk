@@ -72,7 +72,7 @@ TEST(mdoc, mdoc_signature_test) {
 
     MdocSig mdoc_sig(LC, p256, n256_order);
 
-    EltW pkX = Q.input(), pkY = Q.input(), htr = Q.input();
+    EltW pkX = LC.eltw_input(), pkY = LC.eltw_input(), htr = LC.eltw_input();
     v128 emac[2] = {LC.vinput<128>(), LC.vinput<128>()};
     v128 xmac[2] = {LC.vinput<128>(), LC.vinput<128>()};
     v128 ymac[2] = {LC.vinput<128>(), LC.vinput<128>()};
@@ -81,7 +81,7 @@ TEST(mdoc, mdoc_signature_test) {
     Q.private_input();
 
     MdocSig::Witness vwc;
-    vwc.input(Q, LC);
+    vwc.input(LC);
 
     mdoc_sig.assert_signatures(pkX, pkY, htr, emac, xmac, ymac, a_v, vwc);
 
@@ -208,7 +208,7 @@ TEST(mdoc, mdoc_signature_test_with_issuer_list) {
     MdocSig mdoc_sig(LC, p256, n256_order);
 
     // public inputs
-    EltW htr = Q.input();
+    EltW htr = LC.eltw_input();
     v128 emac[2] = {LC.vinput<128>(), LC.vinput<128>()};
     v128 xmac[2] = {LC.vinput<128>(), LC.vinput<128>()};
     v128 ymac[2] = {LC.vinput<128>(), LC.vinput<128>()};
@@ -216,16 +216,16 @@ TEST(mdoc, mdoc_signature_test_with_issuer_list) {
     v128 a_v = LC.vinput<128>();
     EltW xlist[MAX_ISSUERS], ylist[MAX_ISSUERS];
     for (size_t i = 0; i < MAX_ISSUERS; ++i) {
-      xlist[i] = Q.input();
+      xlist[i] = LC.eltw_input();
     }
     for (size_t i = 0; i < MAX_ISSUERS; ++i) {
-      ylist[i] = Q.input();
+      ylist[i] = LC.eltw_input();
     }
 
     Q.private_input();
-    EltW pkX = Q.input(), pkY = Q.input();
+    EltW pkX = LC.eltw_input(), pkY = LC.eltw_input();
     MdocSig::Witness vwc;
-    vwc.input(Q, LC);
+    vwc.input(LC);
 
     mdoc_sig.assert_signatures_with_issuer_list(
         htr, emac, xmac, ymac, a_v, xlist, ylist, MAX_ISSUERS, pkX, pkY, vwc);
@@ -362,7 +362,7 @@ void mdoc_hash_run(const typename Field::Elt &omega, uint64_t omega_order,
     v256 dpky = LC.template vinput<256>();
 
     typename MdocHash::Witness vwc(attrs.size());
-    vwc.input(Q, LC);
+    vwc.input(LC);
 
     mdoc_hash.assert_valid_hash_mdoc(oa.data(), now, e, dpkx, dpky, vwc);
 

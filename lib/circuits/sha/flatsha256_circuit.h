@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "circuits/compiler/compiler.h"
 #include "circuits/logic/bit_adder.h"
 #include "circuits/sha/sha256_constants.h"
 
@@ -61,43 +60,31 @@ class FlatSHA256Circuit {
   const Logic& l_;
   BitPlucker bp_; /* public, so caller can encode input */
 
+  static packed_v32 packed_input(const Logic& lc) {
+    return BitPlucker::template packed_input<packed_v32>(lc);
+  }
+
   struct BlockWitness {
     packed_v32 outw[48];
     packed_v32 oute[64];
     packed_v32 outa[64];
     packed_v32 h1[8];
 
-    static packed_v32 packed_input(QuadCircuit<typename Logic::Field>& Q) {
-      packed_v32 r;
-      for (size_t i = 0; i < r.size(); ++i) {
-        r[i] = Q.input();
-      }
-      return r;
-    }
-
-    void input(QuadCircuit<typename Logic::Field>& Q) {
+    void input(const Logic& lc) {
       for (size_t k = 0; k < 48; ++k) {
-        outw[k] = packed_input(Q);
+        outw[k] = packed_input(lc);
       }
       for (size_t k = 0; k < 64; ++k) {
-        oute[k] = packed_input(Q);
-        outa[k] = packed_input(Q);
+        oute[k] = packed_input(lc);
+        outa[k] = packed_input(lc);
       }
       for (size_t k = 0; k < 8; ++k) {
-        h1[k] = packed_input(Q);
+        h1[k] = packed_input(lc);
       }
     }
   };
 
   explicit FlatSHA256Circuit(const Logic& l) : l_(l), bp_(l_) {}
-
-  static packed_v32 packed_input(QuadCircuit<Field>& Q) {
-    packed_v32 r;
-    for (size_t i = 0; i < r.size(); ++i) {
-      r[i] = Q.input();
-    }
-    return r;
-  }
 
   void assert_transform_block(const v32 in[16], const v32 H0[8],
                               const v32 outw[48], const v32 oute[64],

@@ -31,6 +31,14 @@ using EvaluationBackend = EvaluationBackend<Field>;
 using Logic = Logic<Field, EvaluationBackend>;
 using EltW = Logic::EltW;
 
+template <size_t N>
+void expect_vequal(const Logic& L, const Logic::bitvec<N>& a,
+                   const Logic::bitvec<N>& b) {
+  for (size_t i = 0; i < N; ++i) {
+    EXPECT_EQ(L.eval(a[i]), L.eval(b[i]));
+  }
+}
+
 TEST(Logic, Assert0) {
   const EvaluationBackend ebk(F);
   const Logic L(&ebk, F);
@@ -449,7 +457,7 @@ TEST(Logic, Bitvec) {
   for (size_t a = 0; a < (1 << w); ++a) {
     auto ea = L.vbit<w>(a);
     auto nea = L.vnot(ea);
-    EXPECT_TRUE(L.vequal(&nea, L.vbit<w>(~a)));
+    expect_vequal(L, nea, L.vbit<w>(~a));
 
     // as_scalar() of the bitvec produces the constant A
     // that we started with
@@ -461,14 +469,14 @@ TEST(Logic, Bitvec) {
       auto vor = L.vor(&ea, eb);
       auto vxor = L.vxor(&ea, eb);
       auto vadd = L.vadd(ea, eb);
-      EXPECT_TRUE(L.vequal(&vand, L.vbit<w>(a & b)));
-      EXPECT_TRUE(L.vequal(&vor, L.vbit<w>(a | b)));
-      EXPECT_TRUE(L.vequal(&vxor, L.vbit<w>(a ^ b)));
-      EXPECT_TRUE(L.vequal(&vadd, L.vbit<w>(a + b)));
-      EXPECT_EQ(L.eval(L.veq(ea, eb)), L.eval(L.bit(a == b)));
+      expect_vequal(L, vand, L.vbit<w>(a & b));
+      expect_vequal(L, vor, L.vbit<w>(a | b));
+      expect_vequal(L, vxor, L.vbit<w>(a ^ b));
+      expect_vequal(L, vadd, L.vbit<w>(a + b));
+      EXPECT_EQ(L.eval(L.veq(&ea, eb)), L.eval(L.bit(a == b)));
       EXPECT_EQ(L.eval(L.veq(ea, b)), L.eval(L.bit(a == b)));
       EXPECT_EQ(L.eval(L.vlt(&ea, eb)), L.eval(L.bit(a < b)));
-      EXPECT_EQ(L.eval(L.vlt(&ea, eb)), L.eval(L.bit(a < b)));
+      EXPECT_EQ(L.eval(L.vlt(ea, b)), L.eval(L.bit(a < b)));
       EXPECT_EQ(L.eval(L.vleq(&ea, eb)), L.eval(L.bit(a <= b)));
       EXPECT_EQ(L.eval(L.vleq(ea, b)), L.eval(L.bit(a <= b)));
 
@@ -477,9 +485,9 @@ TEST(Logic, Bitvec) {
         auto vxor3 = L.vxor3(&ea, &eb, ec);
         auto vch = L.vCh(&ea, &eb, ec);
         auto vmaj = L.vMaj(&ea, &eb, ec);
-        EXPECT_TRUE(L.vequal(&vxor3, L.vbit<w>(a ^ b ^ c)));
-        EXPECT_TRUE(L.vequal(&vch, L.vbit<w>((a & b) ^ (~a & c))));
-        EXPECT_TRUE(L.vequal(&vmaj, L.vbit<w>((a & b) ^ (a & c) ^ (b & c))));
+        expect_vequal(L, vxor3, L.vbit<w>(a ^ b ^ c));
+        expect_vequal(L, vch, L.vbit<w>((a & b) ^ (~a & c)));
+        expect_vequal(L, vmaj, L.vbit<w>((a & b) ^ (a & c) ^ (b & c)));
         EXPECT_EQ(L.eval(L.veqmask(&ea, b, ec)),
                   L.eval(L.bit(((a ^ c) & b) == 0)));
         EXPECT_EQ(L.eval(L.veqmask(ea, b, c)),
@@ -489,11 +497,11 @@ TEST(Logic, Bitvec) {
 
     for (size_t b = 0; b <= w; ++b) {
       auto vshr = L.vshr(ea, b);
-      EXPECT_TRUE(L.vequal(&vshr, L.vbit<w>(a >> b)));
+      expect_vequal(L, vshr, L.vbit<w>(a >> b));
       auto vrotr = L.vrotr(ea, b);
-      EXPECT_TRUE(L.vequal(&vrotr, L.vbit<w>((a >> b) | (a << (w - b)))));
+      expect_vequal(L, vrotr, L.vbit<w>((a >> b) | (a << (w - b))));
       auto vrotl = L.vrotl(ea, b);
-      EXPECT_TRUE(L.vequal(&vrotl, L.vbit<w>((a << b) | (a >> (w - b)))));
+      expect_vequal(L, vrotl, L.vbit<w>((a << b) | (a >> (w - b))));
     }
   }
 

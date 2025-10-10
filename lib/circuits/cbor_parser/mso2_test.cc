@@ -514,11 +514,11 @@ TEST(MSO, Example2Real) {
     auto input_lenC = LC.vinput<CborC::kIndexBits>();
     for (size_t i = 0; i < n; ++i) {
       inC[i] = LC.vinput<8>();
-      pwC[i].encoded_sel_header = Q.input();
+      pwC[i].encoded_sel_header = LC.eltw_input();
     }
-    gwC.invprod_decode = Q.input();
+    gwC.invprod_decode = LC.eltw_input();
     gwC.cc0_counter = CTRC.input();
-    gwC.invprod_parse = Q.input();
+    gwC.invprod_parse = LC.eltw_input();
 
     std::vector<CborC::decode> dsC(n);
     std::vector<CborC::parse_output> psC(n);

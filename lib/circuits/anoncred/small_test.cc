@@ -63,7 +63,7 @@ std::unique_ptr<Circuit<Fp256Base>> make_circuit() {
   const LogicCircuit LC(&cbk, p256_base);
   Small small(LC, p256, n256_order);
 
-  EltW pkX = Q.input(), pkY = Q.input(), htr = Q.input();
+  EltW pkX = LC.eltw_input(), pkY = LC.eltw_input(), htr = LC.eltw_input();
   typename Small::OpenedAttribute oa[kNumAttr];
   for (size_t ai = 0; ai < kNumAttr; ++ai) {
     oa[ai].input(LC);
@@ -77,7 +77,7 @@ std::unique_ptr<Circuit<Fp256Base>> make_circuit() {
   Q.private_input();
 
   Small::Witness vwc;
-  vwc.input(Q, LC);
+  vwc.input(LC);
 
   small.assert_credential(pkX, pkY, htr, oa, now, vwc);
 

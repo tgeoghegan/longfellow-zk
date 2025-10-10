@@ -16,11 +16,9 @@
 #define PRIVACY_PROOFS_ZK_LIB_CIRCUITS_JWT_JWT_H_
 
 #include <cstddef>
-#include <cstdint>
 #include <vector>
 
 #include "circuits/base64/decode.h"
-#include "circuits/compiler/compiler.h"
 #include "circuits/ecdsa/verify_circuit.h"
 #include "circuits/jwt/jwt_constants.h"
 #include "circuits/logic/bit_plucker.h"
@@ -80,18 +78,18 @@ class JWT {
     std::vector<vind> attr_ind_;
     vind payload_ind_, payload_len_;
 
-    void input(QuadCircuit<Field>& Q, const LogicCircuit& lc, size_t na) {
-      e_ = Q.input();
-      dpkx_ = Q.input();
-      dpky_ = Q.input();
-      jwt_sig_.input(Q);
-      kb_sig_.input(Q);
+    void input(const LogicCircuit& lc, size_t na) {
+      e_ = lc.eltw_input();
+      dpkx_ = lc.eltw_input();
+      dpky_ = lc.eltw_input();
+      jwt_sig_.input(lc);
+      kb_sig_.input(lc);
       for (size_t i = 0; i < 64 * kMaxSHABlocks; ++i) {
         preimage_[i] = lc.template vinput<8>();
       }
       e_bits_ = lc.template vinput<256>();
       for (size_t j = 0; j < kMaxSHABlocks; ++j) {
-        sha_[j].input(Q);
+        sha_[j].input(lc);
       }
       nb_ = lc.template vinput<8>();
 

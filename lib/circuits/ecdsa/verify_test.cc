@@ -360,14 +360,14 @@ std::unique_ptr<Circuit<Fp256Base>> make_circuit(size_t numSigs,
   std::vector<Verc::Witness> vwc(numSigs);
   std::vector<EltW> pkx, pky, e;
   for (size_t i = 0; i < numSigs; ++i) {
-    pkx.push_back(Q.input());
-    pky.push_back(Q.input());
-    e.push_back(Q.input());
+    pkx.push_back(lc.eltw_input());
+    pky.push_back(lc.eltw_input());
+    e.push_back(lc.eltw_input());
   }
   Q.private_input();
 
   for (size_t i = 0; i < numSigs; ++i) {
-    vwc[i].input(Q);
+    vwc[i].input(lc);
   }
 
   for (size_t i = 0; i < numSigs; ++i) {
@@ -437,8 +437,8 @@ void BM_ECDSASize(benchmark::State& state) {
   Verc verc(lc, p256, n256_order);
 
   Verc::Witness vwc;
-  EltW pkx = Q.input(), pky = Q.input(), e = Q.input();
-  vwc.input(Q);
+  EltW pkx = lc.eltw_input(), pky = lc.eltw_input(), e = lc.eltw_input();
+  vwc.input(lc);
 
   verc.verify_signature3(pkx, pky, e, vwc);
 

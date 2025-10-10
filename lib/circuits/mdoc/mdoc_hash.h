@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "circuits/compiler/compiler.h"
 #include "circuits/logic/bit_plucker.h"
 #include "circuits/logic/memcmp.h"
 #include "circuits/logic/routing.h"
@@ -117,7 +116,7 @@ class MdocHash {
       attrb_.resize(num_attr);
     }
 
-    void input(QuadCircuit<Field>& Q, const LogicCircuit& lc) {
+    void input(const LogicCircuit& lc) {
       nb_ = lc.template vinput<8>();
 
       // sha input init =========================
@@ -125,7 +124,7 @@ class MdocHash {
         in_[i] = lc.template vinput<8>();
       }
       for (size_t j = 0; j < kMaxSHABlocks; j++) {
-        sig_sha_[j].input(Q);
+        sig_sha_[j].input(lc);
       }
 
       valid_from_.input(lc);
@@ -139,7 +138,7 @@ class MdocHash {
           attrb_[ai].push_back(lc.template vinput<8>());
         }
         for (size_t j = 0; j < 2; j++) {
-          attr_sha_[ai][j].input(Q);
+          attr_sha_[ai][j].input(lc);
         }
         attr_mso_[ai].input(lc);
         attr_ei_[ai].input(lc);

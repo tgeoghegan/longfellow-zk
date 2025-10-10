@@ -34,13 +34,13 @@ TEST(Compiler, OutputAnInput) {
   // screw case of outputting an input wire directly
   QuadCircuit<Field> Q(F);
 
-  size_t a = Q.input();
-  size_t b = Q.input();
-  size_t c = Q.input();
+  size_t a = Q.input_wire();
+  size_t b = Q.input_wire();
+  size_t c = Q.input_wire();
 
-  Q.output(a, 0);
+  Q.output_wire(a, 0);
   // add some depth
-  Q.output(Q.mul(b, c), 1);
+  Q.output_wire(Q.mul(b, c), 1);
 
   auto CIRCUIT = Q.mkcircuit(1);
   EXPECT_EQ(Q.nwires_,
@@ -52,9 +52,9 @@ TEST(Compiler, AliasOfLinearAndCopyWire) {
   // at the same time as n is copied by the scheduler
   QuadCircuit<Field> Q(F);
 
-  size_t a = Q.input();
-  Q.output(a, 0);
-  Q.output(Q.linear(a), 1);
+  size_t a = Q.input_wire();
+  Q.output_wire(a, 0);
+  Q.output_wire(Q.linear(a), 1);
   auto CIRCUIT = Q.mkcircuit(1);
   dump_info<Field>("AliasOfLinearAndCopyWire", Q);
   EXPECT_EQ(Q.nwires_,
@@ -65,9 +65,9 @@ TEST(Compiler, Assert0) {
   QuadCircuit<Field> Q(F);
 
   // circuit verifies that a + b = c
-  size_t a = Q.input();
-  size_t b = Q.input();
-  size_t c = Q.input();
+  size_t a = Q.input_wire();
+  size_t b = Q.input_wire();
+  size_t c = Q.input_wire();
 
   Q.assert0(Q.sub(Q.add(a, b), c));
 
@@ -94,7 +94,7 @@ TEST(Compiler, Output0) {
   size_t b = Q.konst(F.one());
   size_t c = Q.mul(a, b);
   size_t d = Q.sub(a, c);
-  Q.output(d, 0);
+  Q.output_wire(d, 0);
 
   size_t nc = 1;
   auto CIRCUIT = Q.mkcircuit(nc);

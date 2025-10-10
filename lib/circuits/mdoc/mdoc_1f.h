@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "circuits/cbor_parser/cbor.h"
-#include "circuits/compiler/compiler.h"
 #include "circuits/ecdsa/verify_circuit.h"
 #include "circuits/logic/bit_plucker.h"
 #include "circuits/logic/counter.h"
@@ -119,15 +118,15 @@ class mdoc_1f {
       }
     }
 
-    void input(QuadCircuit<Field>& Q, const LogicCircuit& lc) {
+    void input(const LogicCircuit& lc) {
       const Counter<LogicCircuit> CTRC(lc);
 
-      e_ = Q.input();
-      dpkx_ = Q.input();
-      dpky_ = Q.input();
+      e_ = lc.eltw_input();
+      dpkx_ = lc.eltw_input();
+      dpky_ = lc.eltw_input();
 
-      sig_.input(Q);
-      dpk_sig_.input(Q);
+      sig_.input(lc);
+      dpk_sig_.input(lc);
 
       nb_ = lc.template vinput<8>();
 
@@ -137,7 +136,7 @@ class mdoc_1f {
       }
 
       for (size_t j = 0; j < kMdoc1MaxSHABlocks; j++) {
-        sig_sha_[j].input(Q);
+        sig_sha_[j].input(lc);
       }
 
       // Cbor input init: note, the inC array will be constructed in the
@@ -145,11 +144,11 @@ class mdoc_1f {
       prepad_ = lc.template vinput<kMdoc1CborIndexBits>();
       mso_len_ = lc.template vinput<kMdoc1CborIndexBits>();
       for (size_t i = 0; i < kMdoc1MaxMsoLen; ++i) {
-        pwcb_[i].encoded_sel_header = Q.input();
+        pwcb_[i].encoded_sel_header = lc.eltw_input();
       }
-      gwcb_.invprod_decode = Q.input();
+      gwcb_.invprod_decode = lc.eltw_input();
       gwcb_.cc0_counter = CTRC.input();
-      gwcb_.invprod_parse = Q.input();
+      gwcb_.invprod_parse = lc.eltw_input();
 
       valid_.input(lc);
       valid_from_.input(lc);
@@ -167,7 +166,7 @@ class mdoc_1f {
           attrb_[ai].push_back(lc.template vinput<8>());
         }
         for (size_t j = 0; j < 2; j++) {
-          attr_sha_[ai][j].input(Q);
+          attr_sha_[ai][j].input(lc);
         }
         attr_mso_[ai].input(lc);
         attr_ei_[ai].input(lc);
