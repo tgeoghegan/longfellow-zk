@@ -80,9 +80,30 @@ TEST(Transcript, Associative) {
   }
 }
 
+void dump_elt(Elt elt) {
+  uint8_t buf[Field::kBytes];
+  F.to_bytes_field(buf, elt);
+  for (size_t i = 0; i < Field::kBytes; i++) {
+    printf("%02x", buf[i]);
+  }
+  printf(",\n");
+}
+
 TEST(Transcript, GenArrayChallenge) {
   Transcript ts((uint8_t *)"test", 4);
+  // write a byte array
+  uint8_t d[100];
+  for (size_t i = 0; i < 100; ++i) {
+    d[i] = static_cast<uint8_t>(i);
+  }
+  ts.write(d, 100);
+
+  // write a field element
   ts.write(F.of_scalar(7), F);
+
+  // write a field element array
+  Elt array[2] = {F.of_scalar(8), F.of_scalar(9)};
+  ts.write(array, 1, 2, F);
 
   Elt e[16];
   ts.clone().elt(e, 16, F);
@@ -91,6 +112,60 @@ TEST(Transcript, GenArrayChallenge) {
     // Generating challenge one element at a time is equivalent to generating
     // multiple elements together.
     EXPECT_EQ(ts.elt(F), e[i]);
+
+    dump_elt(e[i]);
+  }
+}
+
+TEST(Transcript, TestWriteByteArray) {
+  Transcript ts((uint8_t *)"test", 4);
+  // write a byte array
+  uint8_t d[100];
+  for (size_t i = 0; i < 100; ++i) {
+    d[i] = static_cast<uint8_t>(i);
+  }
+  ts.write(d, 100);
+
+  Elt e[16];
+  ts.clone().elt(e, 16, F);
+
+  for (size_t i = 0; i < 16; ++i) {
+    EXPECT_EQ(ts.elt(F), e[i]);
+
+    dump_elt(e[i]);
+  }
+}
+
+TEST(Transcript, TestWriteFieldElement) {
+  Transcript ts((uint8_t *)"test", 4);
+
+  // write a field element
+  ts.write(F.of_scalar(7), F);
+
+  Elt e[16];
+  ts.clone().elt(e, 16, F);
+
+  for (size_t i = 0; i < 16; ++i) {
+    EXPECT_EQ(ts.elt(F), e[i]);
+
+    dump_elt(e[i]);
+  }
+}
+
+TEST(Transcript, TestWriteFieldElementArray) {
+  Transcript ts((uint8_t *)"test", 4);
+
+  // write a field element array
+  Elt array[2] = {F.of_scalar(8), F.of_scalar(9)};
+  ts.write(array, 1, 2, F);
+
+  Elt e[16];
+  ts.clone().elt(e, 16, F);
+
+  for (size_t i = 0; i < 16; ++i) {
+    EXPECT_EQ(ts.elt(F), e[i]);
+
+    dump_elt(e[i]);
   }
 }
 
