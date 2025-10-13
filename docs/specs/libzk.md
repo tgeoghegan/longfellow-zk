@@ -134,7 +134,7 @@ erasure codes</title>
 </reference>
 
 # Fiat-Shamir primitives
-A ZK protocol must in general be interactive whereby the Prover and Verifier engage in multiple rounds of communication.  However, in practice, it is often more convenient to deploy so-called ``non-interactive" protocols that only require a single message from Prover to Verifier.  It is possible to apply the Fiat-Shamir heuristic to transform a special class of interactive protocols into single-message protocols from Prover to Verifier.
+A ZK protocol may in general be interactive whereby the Prover and Verifier engage in multiple rounds of communication.  However, in practice, it is often more convenient to deploy a so-called non-interactive or single-message protocol that only requires a single message from Prover to Verifier.  It is possible to apply the Fiat-Shamir heuristic to transform a special class of interactive protocols into single-message protocols.
 
 The Fiat-Shamir transform is a method for generating a verifier's public coin challenges by processing the concatenation of all of the Prover's messages.   The transform can be proven to be sound when applied to an interactive protocol that is round-by-round sound and when the oracle is implemented with a hash function that satisfies a correlation-intractability property with respect to the state function implied by the round-by-round soundness.  See Theorem 5.8 of [@rbr] for details.
 
@@ -161,78 +161,82 @@ As an additional property, each query to the random oracle should be able to be 
     </front>
 </reference>
 
-## Implementation
-Let `H` be a collision-resistant hash function.
-A protocol consists of multiple rounds in which a Prover sends a message, and a verifier responds with a public-coin or random challenge. The Fiat-Shamir transform for such a protocol is implemented by maintaining a `transcript` object.
+## Implementation of a random oracle
+The Fiat-Shamir transform makes use of an ideal random oracle that maps an arbitrarily long string to a random element sampled from a specific domain. 
+A protocol consists of multiple rounds in which a Prover sends a message, and a verifier responds with a public-coin or random challenge. The Fiat-Shamir transform for such a protocol is implemented by maintaining a `transcript` object. The `transcript` object is parameterized by a collision-resistant hash function `H` that is specified externally. For example, the SHA-256 function is a suitable choice.
+
+The `transcript` object maintains an internal string `tr` that begins as the empty string.
 
 ### Initialization
 At the beginning of the protocol, the transcript object must be initialized.
 
 *  `transcript.init(session_id)`: The initialization begins by
    selecting an oracle, which concretely consists of selecting a fresh
-   session identifier. This process is handled by the encapsulating
+   session identifier nonce. This process is handled by the encapsulating
    protocol---for example, the transcript that is used for key
    exchange for a session can be used as the session identifier as it
    is guaranteed to be unique.
-
+   The `session_id` string should be exactly 32 bytes and it is appended to the end of `tr`.
+   This method must be called exactly once before any other method on the `transcript` object is invoked.
+   
 ### Writing to the transcript
 The transcript object supports a `write` method that is used to record
-the Prover's messages.  To produce the verifier's challenge message, the transcript object internally maintains a Fiat-Shamir Pseudo-random Function (FSPRF) object that
-generates a stream of pseudo-random bytes.  Each invocation of
-`write` creates a new FSPRF object, which we denote by `fs`.
+the Prover's messages.
 
 *  `transcript.write(msg)`: appends the Prover's next message to
-the transcript.
+the end of the `tr` string that is maintained by the transcript.
 
 There are three types of messages that can be appended to the transcript: a field element, an array of bytes, or an array of field elements.  
-
-* To append a field element, first the byte designator `0x1` is appended, and then the canonical byte serialization of the field element is appended.  
+* To append a field element, first the byte designator `0x1` is appended to `tr`, and then the canonical byte serialization of the field element is appended to `tr`.  
 
 * To append an array of bytes, first the byte designator `0x2` is
 appended, an 8-byte little-endian encoding of the number of bytes in
-the array is appended, and then the bytes of the array are appended.
+the array is appended, and then the bytes of the array are appended to `tr`.
 
 * To append an array of field elements, the byte designator `0x3` is
-added, an 8-byte little-endian encoding of the number of field
+appended, an 8-byte little-endian encoding of the number of field
 elements is appended, and finally, all of the field elements in array
-order are serialized and appended.
+order are serialized and appended to `tr`.
 
 ### Special rules for the first message
 The `write` method for the first prover message incorporates
 additional steps that enhance the correlation-intractability property
-of the oracle.  To process the Prover's first message (which is usually a
-commitment):
+of the oracle.  To process the Prover's first message:
 
-1.  The Prover message is appended to the transcript. Specifically, the length of the message, as per the above convention, is appended, and then the bytes of the message are appended.
+1.  The Prover message is appended to `tr`. Specifically, the length of the message, as per the above convention, is appended, and then the bytes of the message are appended.
 2.  Next, an encoding of the statement to be proven, which consists of
     the circuit identifier, and a serialization of the input and
     output of the statement is appended. Each of these three message are added as
-    byte sequences, with their length appended as per convention.
+    byte sequences, with their length appended first as per convention.
 3.  Finally, the transcript is augmented by the byte-array 0^|C|^,
     which consists of |C| bytes of zeroes. 
 
-One might at first think of performing steps 2 and 3 first so as to
+One might think of performing steps 2 and 3 first so as to
 simplify the description of the protocol, and moreover step 3 may
 appear to be unnecessary.  Performing the steps in the indicated order
 protects against the attack described in [@krs], under the assumption
-that it is infeasible for a circuit C that contains |C| arithmetic
-gates to compute the hash of a string of length |C|.
+that it is infeasible for a circuit `C` that contains `|C|` arithmetic
+gates to compute the hash of a string (with a random prefix) of length 
+greater than `|C|`.
 
 Subsequent calls to the `write` method are used to record the Prover's
 response messages `msg`. In this case, the message is appended
 following the conventions described above.
 
 ## The FSPRF object
-Each `write` internally creates an FSPRF object `fs` that is seeded
-with the hash digest of the transcript at the end of the write
-operation.
+To produce the verifier's challenge message, the transcript object internally maintains a Fiat-Shamir Pseudo-random Function (FSPRF) object that generates a stream of pseudo-random bytes.
+
+Each invocation of `write` defines an FSPRF object `fs` as follows.
+First, the append operations described above for each type of `write` are performed, resulting in a new `tr` string.
+Next, a seed is generated by applying the function `H` to the (entire) string `tr`. This seed is then used to define the
+FSPRF object.
 
 The FSPRF object is defined to produce an infinite stream of bytes that can be used to sample all of the verifier's challenges in this round. The stream is organized in blocks of 16 bytes each,
 numbered consecutively starting at 0.  Block `i` contains
 ```
-    AES256(KEY, ID(i))
+    AES256(SEED, ID(i))
 ```
-where `KEY` is the seed of the FSPRF object, and `ID(i)` is the
+where `SEED` is the seed of the FSPRF object, and `ID(i)` is the
 16-byte little-endian representation of integer `i`.
 
 The FSPRF object supports a `bytes` method:
@@ -291,6 +295,9 @@ pseudo-random integers via rejection sampling as follows:
     </front>
 </reference>
 
+### Optimizations
+As described, the hash function `H` is applied to progressively longer and longer `tr` strings as the protocol evolves from round to round. In practice, most implementations of cryptographic hash functions provide a data-structure which allows incremental update of the state of the hash function while also allowing a digest to be computed at any intermediate point.
+
 {{ligero.md}}
 
 
@@ -342,6 +349,13 @@ protocol is the following:
    step 3 to check the constraints.
 
 Steps 2 and 3 are referred to as "sumcheck", and the rest as "commitment scheme".  While the classification of step 3 as "sumcheck" is  arbitrary, there are situations where one might want to use a commitment scheme other than the Ligero protocol specified in this document.  In this case, the "commitment scheme" can change while the "sumcheck" remains unaffected.
+
+
+## Parameters needed to define Longfellow
+Longfellow is parameterized by a sumcheck protocol, a commitment protocol, and a Fiat-Shamir instantiation.
+A selection of all three defines a `Longfellow profile`. This document introduces one opinionated profile that
+uses (a) The longfellow sumcheck described below, (b) the Ligero commitment described above, (c) the Fiat-Shamir instantiation defined
+above and using SHA-256 as the function `H`.
 
 {{sumcheck.md}}
 
