@@ -44,11 +44,11 @@ class mdoc_1f {
   using Flatsha =
       FlatSHA256Circuit<LogicCircuit,
                         BitPlucker<LogicCircuit, kMdoc1SHAPluckerBits>>;
-  using Routing = Routing<LogicCircuit>;
+  using RoutingL = Routing<LogicCircuit>;
   using ShaBlockWitness = typename Flatsha::BlockWitness;
   using sha_packed_v32 = typename Flatsha::packed_v32;
-  using Cbor = Cbor<LogicCircuit, kMdoc1CborIndexBits>;
-  using vind = typename Cbor::vindex;
+  using CborL = Cbor<LogicCircuit, kMdoc1CborIndexBits>;
+  using vind = typename CborL::vindex;
 
   const LogicCircuit& lc_;
   const EC& ec_;
@@ -95,8 +95,8 @@ class mdoc_1f {
     std::vector<AttrShift> attr_ev_;
 
     std::vector<v8> incb_;
-    std::vector<typename Cbor::position_witness> pwcb_;
-    typename Cbor::global_witness gwcb_;
+    std::vector<typename CborL::position_witness> pwcb_;
+    typename CborL::global_witness gwcb_;
 
     vind prepad_, mso_len_;
 
@@ -221,8 +221,8 @@ class mdoc_1f {
     r_.unshift(vw.prepad_, kMdoc1MaxMsoLen, in_cb.data(),
                kMdoc1MaxMsoLen - 5 - 2, vw.in_ + 5 + 2, zz, 3);
 
-    std::vector<typename Cbor::decode> dsC(kMdoc1MaxMsoLen);
-    std::vector<typename Cbor::parse_output> psC(kMdoc1MaxMsoLen);
+    std::vector<typename CborL::decode> dsC(kMdoc1MaxMsoLen);
+    std::vector<typename CborL::parse_output> psC(kMdoc1MaxMsoLen);
     cbor_.decode_and_assert_decode_and_parse(kMdoc1MaxMsoLen, dsC.data(),
                                              psC.data(), in_cb.data(),
                                              vw.pwcb_.data(), vw.gwcb_);
@@ -343,8 +343,8 @@ class mdoc_1f {
   }
 
   void assert_path(size_t len, PathEntry p[], const Witness& vw,
-                   std::vector<typename Cbor::decode>& dsC,
-                   std::vector<typename Cbor::parse_output>& psC) const {
+                   std::vector<typename CborL::decode>& dsC,
+                   std::vector<typename CborL::parse_output>& psC) const {
     vind start = vw.prepad_;
     for (size_t i = 0; i < len; ++i) {
       cbor_.assert_map_entry(kMdoc1MaxMsoLen, start, i, p[i].ind.k, p[i].ind.v,
@@ -356,7 +356,7 @@ class mdoc_1f {
   }
 
   void assert_elt_as_be_bytes_at(size_t n, const vind& j, size_t len, EltW X,
-                                 const typename Cbor::decode ds[/*n*/]) const {
+                                 const typename CborL::decode ds[/*n*/]) const {
     const LogicCircuit& LC = lc_;  // shorthand
 
     std::vector<EltW> A(n);
@@ -392,8 +392,8 @@ class mdoc_1f {
   }
 
   Flatsha sha_;
-  Routing r_;
-  Cbor cbor_;
+  RoutingL r_;
+  CborL cbor_;
 };
 
 }  // namespace proofs
