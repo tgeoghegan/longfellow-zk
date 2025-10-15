@@ -23,6 +23,7 @@
 #include "algebra/fft.h"
 #include "algebra/fp.h"
 #include "algebra/fp_p256.h"
+#include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 
 namespace proofs {
@@ -234,5 +235,46 @@ TEST(Fp2, All) {
     tests<Field>::all(omega, omega_order, F);
   }
 }
+
+// ==================== Benchmarking ====================
+void BM_p2562_add(benchmark::State& state) {
+  const Fp256<true> F0;
+  using Field = Fp2<Fp256<true>>;
+  const Field F(F0);
+  static constexpr char kRootX[] =
+      "1126492241464102818735004576096902583730188404304894087292237141715826"
+      "64680802";
+  static constexpr char kRootY[] =
+      "3170409485181534106695698552158891296990397441810793544622061305441663"
+      "7641043";
+  auto omega = F.of_string(kRootX, kRootY);
+
+  for (auto _ : state) {
+    auto t = F.addf(omega, omega);
+    benchmark::DoNotOptimize(t);
+  }
+}
+
+BENCHMARK(BM_p2562_add);
+
+void BM_p2562_mul(benchmark::State& state) {
+  const Fp256<true> F0;
+  using Field = Fp2<Fp256<true>>;
+  const Field F(F0);
+  static constexpr char kRootX[] =
+      "1126492241464102818735004576096902583730188404304894087292237141715826"
+      "64680802";
+  static constexpr char kRootY[] =
+      "3170409485181534106695698552158891296990397441810793544622061305441663"
+      "7641043";
+  auto a = F.of_string(kRootX, kRootY);
+  for (auto _ : state) {
+    auto b = F.mulf(a, a);
+    benchmark::DoNotOptimize(b);
+  }
+}
+
+BENCHMARK(BM_p2562_mul);
+
 }  // namespace
 }  // namespace proofs

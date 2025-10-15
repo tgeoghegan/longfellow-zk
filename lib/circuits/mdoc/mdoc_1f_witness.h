@@ -40,7 +40,7 @@ class mdoc_1f_witness {
   using Elt = typename Field::Elt;
   using Nat = typename Field::N;
   using EcdsaWitness = VerifyWitness3<EC, ScalarField>;
-  using CborWitness = CborWitness<Field>;
+  using CborWitnessF = CborWitness<Field>;
 
  public:
   const EC ec_;
@@ -64,9 +64,9 @@ class mdoc_1f_witness {
   std::vector<AttrShift> attr_ev_;
 
   // Cbor parsing witnesses
-  std::vector<typename CborWitness::v8> incb_;
-  std::vector<typename CborWitness::position_witness> pwcb_;
-  typename CborWitness::global_witness gwcb_;
+  std::vector<typename CborWitnessF::v8> incb_;
+  std::vector<typename CborWitnessF::position_witness> pwcb_;
+  typename CborWitnessF::global_witness gwcb_;
 
   explicit mdoc_1f_witness(size_t num_attr, const EC& ec, const ScalarField& Fn)
       : ec_(ec),
@@ -223,7 +223,7 @@ class mdoc_1f_witness {
     buf.erase(buf.begin(), buf.begin() + kCose1PrefixLen + 2 + 5);
     buf.insert(buf.begin(), prepad, 0);
 
-    CborWitness cw(ec_.f_);
+    CborWitnessF cw(ec_.f_);
     cw.fill_witnesses(kMdoc1MaxMsoLen, pm_.t_mso_.len, buf.data(), incb_.data(),
                       pwcb_.data(), gwcb_);
 

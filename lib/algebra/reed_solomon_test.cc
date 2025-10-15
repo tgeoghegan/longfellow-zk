@@ -23,6 +23,8 @@
 #include "algebra/blas.h"
 #include "algebra/bogorng.h"
 #include "algebra/convolution.h"
+#include "algebra/crt.h"
+#include "algebra/crt_convolution.h"
 #include "algebra/fp.h"
 #include "algebra/fp2.h"
 #include "algebra/fp_p128.h"
@@ -109,6 +111,7 @@ void one_field_reed_solomon(const typename Field::Elt& omega,
   using Interpolation = Interpolation<N, Field>;
   using FFTConvolutionFactory = FFTConvolutionFactory<Field>;
   using SlowConvolutionFactory = SlowConvolutionFactory<Field>;
+  using CrtConvolutionFactory = CrtConvolutionFactory<CRT256<Field>, Field>;
   using Poly = Poly<N, Field>;  // N-tuple, i.e., at most N-1 degree polynomial
 
   Bogorng<Field> rng(&f);
@@ -146,6 +149,17 @@ void one_field_reed_solomon(const typename Field::Elt& omega,
   r_slow.interpolate(&L3[0]);
   for (size_t i = 0; i < M; ++i) {
     EXPECT_EQ(L3[i], L[i]);
+  }
+
+  std::vector<Elt> L4(M);
+  for (size_t i = 0; i < N; ++i) {
+    L4[i] = L[i];
+  }
+  CrtConvolutionFactory crt_factory(f);
+  ReedSolomon<Field, CrtConvolutionFactory> r_crt(N, M, f, crt_factory);
+  r_crt.interpolate(&L4[0]);
+  for (size_t i = 0; i < M; ++i) {
+    EXPECT_EQ(L4[i], L[i]);
   }
 }
 
@@ -317,6 +331,8 @@ TEST(ReedSolomonTest, FieldExtension) {
 
 // ==================== Benchmarking ====================
 
+#define BENCHMARK_SETTINGS ->RangeMultiplier(4)->Range(1 << 10, 1 << 22)
+
 // This benchmark template works for both standard fields and field extensions.
 template <class BaseField, class FFT, class RS, const BaseField& f,
           const FFT& factory>
@@ -347,7 +363,7 @@ const FFT_p128 fft_p128(fp128, kOmega128, kOmegaOrder128);
 void BM_ReedSolomonFp128(benchmark::State& state) {
   BM_ReedSolomon<Fp128, FFT_p128, RS_p128, fp128, fft_p128>(state);
 }
-BENCHMARK(BM_ReedSolomonFp128)->RangeMultiplier(4)->Range(1 << 10, 1 << 20);
+BENCHMARK(BM_ReedSolomonFp128) BENCHMARK_SETTINGS;
 
 // FP 64
 using Fp64 = Fp<1>;
@@ -355,28 +371,13 @@ using FFT_p64 = FFTConvolutionFactory<Fp64>;
 using RS_p64 = ReedSolomon<Fp64, FFT_p64>;
 const Fp64 fp64("18446744069414584321");
 const auto kOmega64 = fp64.of_string("2752994695033296049");
-const uint64_t kOmegaOrder64 = 1ull << 32;
+const uint64_t kOmegaOrder64 = 1ull << 29;
 const FFT_p64 fft_p64(fp64, kOmega64, kOmegaOrder64);
-
-// FP 64^2
-using Fp64_2 = Fp2<Fp64>;
-using FFT_p64_2 = FFTExtConvolutionFactory<Fp64, Fp64_2>;
-using RS_p64_2 = ReedSolomon<Fp64, FFT_p64_2>;
-const Fp64_2 fp64_2(fp64);
-const auto kOmega64_2 = fp64_2.of_string("2752994695033296049");
-const uint64_t kOmegaOrder64_2 = 1ull << 32;
-const FFT_p64_2 fft_p64_2(fp64, fp64_2, kOmega64_2, kOmegaOrder64_2);
 
 void BM_ReedSolomonFp64(benchmark::State& state) {
   BM_ReedSolomon<Fp64, FFT_p64, RS_p64, fp64, fft_p64>(state);
 }
-BENCHMARK(BM_ReedSolomonFp64)->RangeMultiplier(4)->Range(1 << 10, 1 << 20);
-
-void BM_ReedSolomonFp64_2(benchmark::State& state) {
-  BM_ReedSolomon<Fp64, FFT_p64_2, RS_p64_2, fp64, fft_p64_2>(state);
-}
-
-BENCHMARK(BM_ReedSolomonFp64_2)->RangeMultiplier(4)->Range(1 << 10, 1 << 20);
+BENCHMARK(BM_ReedSolomonFp64) BENCHMARK_SETTINGS;
 
 // FP p256^2
 using Fp256 = Fp256<>;
@@ -397,7 +398,76 @@ void BM_ReedSolomonFp256(benchmark::State& state) {
   BM_ReedSolomon<Fp256, FFT_p256_2, RS_p256_2, fp256, fft_p256_2>(state);
 }
 
-BENCHMARK(BM_ReedSolomonFp256)->RangeMultiplier(4)->Range(1 << 10, 1 << 20);
+BENCHMARK(BM_ReedSolomonFp256) BENCHMARK_SETTINGS;
+
+using CRT_p256 = CrtConvolutionFactory<CRT256<Fp256>, Fp256>;
+using RS_CRT_p256 = ReedSolomon<Fp256, CRT_p256>;
+const CRT_p256 crt_factory(fp256);
+
+void BM_ReedSolomonFp256_crt(benchmark::State& state) {
+  BM_ReedSolomon<Fp256, CRT_p256, RS_CRT_p256, fp256, crt_factory>(state);
+}
+BENCHMARK(BM_ReedSolomonFp256_crt) BENCHMARK_SETTINGS;
+
+// 384-bit prime examples
+// Use a prime that has a root of unity to compare against CRT.
+using Fp6 = Fp<6, true>;
+using FFT_w6 = FFTConvolutionFactory<Fp6>;
+using RS_w6 = ReedSolomon<Fp6, FFT_w6>;
+const Fp6 fp6(
+    "20037974874267939960898896867684052278357888070333354909979956374824637627"
+    "743258099255609959785846902476153458524161");
+const auto kOmega6 = fp6.of_string(
+    "50647606193563528288433715408802192282898918225577021459322655193419480990"
+    "14652144667694099245156866923045442095606");
+const uint64_t kOmegaOrder6 = 1ull << 22;
+const FFT_w6 fft_w6(fp6, kOmega6, kOmegaOrder6);
+
+void BM_RS384_native(benchmark::State& state) {
+  BM_ReedSolomon<Fp6, FFT_w6, RS_w6, fp6, fft_w6>(state);
+}
+BENCHMARK(BM_RS384_native) BENCHMARK_SETTINGS;
+
+// Same prime using CRT.
+using CRT_p6 = CrtConvolutionFactory<CRT384<Fp6>, Fp6>;
+using RS_CRT_p6 = ReedSolomon<Fp6, CRT_p6>;
+const CRT_p6 crt_p6_factory(fp6);
+
+void BM_RS384_crt(benchmark::State& state) {
+  BM_ReedSolomon<Fp6, CRT_p6, RS_CRT_p6, fp6, crt_p6_factory>(state);
+}
+BENCHMARK(BM_RS384_crt) BENCHMARK_SETTINGS;
+
+// 521-bit prime examples
+// Use a prime that has a root of unity to compare against CRT.
+using Fp9 = Fp<9, true>;
+using FFT_w9 = FFTConvolutionFactory<Fp9>;
+using RS_w9 = ReedSolomon<Fp9, FFT_w9>;
+
+const Fp9 fp9(
+    "32079476204984456963893996693749287914273772187064638495748042644433982545"
+    "37419754756860742716602395683304244565676779070886473574346574476927946442"
+    "026254337");
+const auto kOmega9 = fp9.of_string(
+    "31823443021031919081147483961203288919826765761971511088433594166437381726"
+    "07399657243575079979889297218330863250710223139208683093312148113827665536"
+    "113183520");
+const FFT_w9 fft_w9(fp9, kOmega9, 1ull << 22);
+
+void BM_RS521_native(benchmark::State& state) {
+  BM_ReedSolomon<Fp9, FFT_w9, RS_w9, fp9, fft_w9>(state);
+}
+BENCHMARK(BM_RS521_native) BENCHMARK_SETTINGS;
+
+// Same prime using CRT.
+using CRT_p9 = CrtConvolutionFactory<CRT384<Fp9>, Fp9>;
+using RS_CRT_p9 = ReedSolomon<Fp9, CRT_p9>;
+const CRT_p9 crt_p9_factory(fp9);
+
+void BM_RS521_crt(benchmark::State& state) {
+  BM_ReedSolomon<Fp9, CRT_p9, RS_CRT_p9, fp9, crt_p9_factory>(state);
+}
+BENCHMARK(BM_RS521_crt) BENCHMARK_SETTINGS;
 
 }  // namespace
 }  // namespace proofs

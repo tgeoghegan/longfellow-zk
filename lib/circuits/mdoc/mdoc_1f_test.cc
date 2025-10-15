@@ -229,9 +229,9 @@ std::unique_ptr<Circuit<Fp256Base>> make_mdoc1f_circuit(const Fp256Base& f) {
   MDL mdoc(lc, p256, n256_order);
 
   // Define Public Inputs (example structure)
-  EltW pkX = Q.input();
-  EltW pkY = Q.input();
-  EltW tr = Q.input();
+  EltW pkX = lc.eltw_input();
+  EltW pkY = lc.eltw_input();
+  EltW tr = lc.eltw_input();
 
   // Add opened attributes and now.
   MDL::OpenedAttribute oa2i[1];
@@ -246,7 +246,7 @@ std::unique_ptr<Circuit<Fp256Base>> make_mdoc1f_circuit(const Fp256Base& f) {
 
   Q.private_input();
   MW witness(1);
-  witness.input(Q, lc);
+  witness.input(lc);
 
   mdoc.assert_credential(pkX, pkY, tr, oa2i, now, witness);
 

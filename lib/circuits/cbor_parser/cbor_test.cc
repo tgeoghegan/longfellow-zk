@@ -146,11 +146,11 @@ TEST(CBOR, VerifyParseSize) {
 
     for (size_t j = 0; j < n; ++j) {
       inC[j] = LC.vinput<8>();
-      pwC[j].encoded_sel_header = Q.input();
+      pwC[j].encoded_sel_header = LC.eltw_input();
     }
-    gwC.invprod_decode = Q.input();
+    gwC.invprod_decode = LC.eltw_input();
     gwC.cc0_counter = CTRC.input();
-    gwC.invprod_parse = Q.input();
+    gwC.invprod_parse = LC.eltw_input();
 
     std::vector<CborC::decode> dsC(n);
     std::vector<CborC::parse_output> psC(n);
@@ -162,7 +162,7 @@ TEST(CBOR, VerifyParseSize) {
     size_t nout = 0;
     for (size_t j = 0; j < n; ++j) {
       for (size_t l = 0; l < kNCounters; ++l) {
-        Q.output(psC[j].c[l].e, nout++);
+        LC.output(psC[j].c[l].e, nout++);
       }
     }
 

@@ -36,7 +36,7 @@
 #include "ec/p256.h"
 #include "util/log.h"
 #include "gtest/gtest.h"
-
+#include "openssl/evp.h"
 #include "openssl/bn.h"
 #include "openssl/ec.h"
 

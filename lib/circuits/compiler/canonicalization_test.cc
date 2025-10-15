@@ -36,23 +36,23 @@ TEST(Compiler, CanonicalizationSimple) {
   {
     QuadCircuit<Field> Q(F);
 
-    size_t a = Q.input();
-    size_t b = Q.input();
-    size_t c = Q.input();
-    size_t d = Q.input();
+    size_t a = Q.input_wire();
+    size_t b = Q.input_wire();
+    size_t c = Q.input_wire();
+    size_t d = Q.input_wire();
     size_t ab = Q.mul(a, b);
     size_t cd = Q.mul(c, d);
     size_t out = Q.mul(ab, cd);
-    Q.output(out, 0);
+    Q.output_wire(out, 0);
     c0 = Q.mkcircuit(1);
   }
   {
     QuadCircuit<Field> Q(F);
 
-    size_t a = Q.input();
-    size_t b = Q.input();
-    size_t c = Q.input();
-    size_t d = Q.input();
+    size_t a = Q.input_wire();
+    size_t b = Q.input_wire();
+    size_t c = Q.input_wire();
+    size_t d = Q.input_wire();
     size_t cd = Q.mul(c, d);
     size_t ab = Q.mul(b, a);
     // introduce spurious unused results just to confuse things
@@ -60,7 +60,7 @@ TEST(Compiler, CanonicalizationSimple) {
     Q.add(a, b);
     Q.sub(d, ab);
     size_t out = Q.mul(ab, cd);
-    Q.output(out, 0);
+    Q.output_wire(out, 0);
     c1 = Q.mkcircuit(1);
   }
   for (size_t i = 0; i < sizeof(c0->id); ++i) {
@@ -128,8 +128,8 @@ TEST(Compiler, CanonicalizationMatMul) {
     size_t A[kN][kN], B[kN][kN];
     for (size_t i = 0; i < kN; ++i) {
       for (size_t j = 0; j < kN; ++j) {
-        A[i][j] = Q.input();
-        B[i][j] = Q.input();
+        A[i][j] = Q.input_wire();
+        B[i][j] = Q.input_wire();
       }
     }
 
@@ -140,7 +140,7 @@ TEST(Compiler, CanonicalizationMatMul) {
     size_t nout = 0;
     for (size_t i = 0; i < kN; ++i) {
       for (size_t j = 0; j < kN; ++j) {
-        Q.output(A[i][j], nout++);
+        Q.output_wire(A[i][j], nout++);
       }
     }
 
@@ -153,8 +153,8 @@ TEST(Compiler, CanonicalizationMatMul) {
     size_t A[kN][kN], B[kN][kN];
     for (size_t i = 0; i < kN; ++i) {
       for (size_t j = 0; j < kN; ++j) {
-        A[i][j] = Q.input();
-        B[i][j] = Q.input();
+        A[i][j] = Q.input_wire();
+        B[i][j] = Q.input_wire();
       }
     }
 
@@ -169,7 +169,7 @@ TEST(Compiler, CanonicalizationMatMul) {
     size_t nout = 0;
     for (size_t i = 0; i < kN; ++i) {
       for (size_t j = 0; j < kN; ++j) {
-        Q.output(A[i][j], nout++);
+        Q.output_wire(A[i][j], nout++);
       }
     }
 

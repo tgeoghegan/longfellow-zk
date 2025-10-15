@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "circuits/cbor_parser/cbor.h"
-#include "circuits/compiler/compiler.h"
 #include "circuits/ecdsa/verify_circuit.h"
 #include "circuits/logic/bit_plucker.h"
 #include "circuits/logic/counter.h"
@@ -45,11 +44,11 @@ class mdoc_1f {
   using Flatsha =
       FlatSHA256Circuit<LogicCircuit,
                         BitPlucker<LogicCircuit, kMdoc1SHAPluckerBits>>;
-  using Routing = Routing<LogicCircuit>;
+  using RoutingL = Routing<LogicCircuit>;
   using ShaBlockWitness = typename Flatsha::BlockWitness;
   using sha_packed_v32 = typename Flatsha::packed_v32;
-  using Cbor = Cbor<LogicCircuit, kMdoc1CborIndexBits>;
-  using vind = typename Cbor::vindex;
+  using CborL = Cbor<LogicCircuit, kMdoc1CborIndexBits>;
+  using vind = typename CborL::vindex;
 
   const LogicCircuit& lc_;
   const EC& ec_;
@@ -96,8 +95,8 @@ class mdoc_1f {
     std::vector<AttrShift> attr_ev_;
 
     std::vector<v8> incb_;
-    std::vector<typename Cbor::position_witness> pwcb_;
-    typename Cbor::global_witness gwcb_;
+    std::vector<typename CborL::position_witness> pwcb_;
+    typename CborL::global_witness gwcb_;
 
     vind prepad_, mso_len_;
 
@@ -119,15 +118,15 @@ class mdoc_1f {
       }
     }
 
-    void input(QuadCircuit<Field>& Q, const LogicCircuit& lc) {
+    void input(const LogicCircuit& lc) {
       const Counter<LogicCircuit> CTRC(lc);
 
-      e_ = Q.input();
-      dpkx_ = Q.input();
-      dpky_ = Q.input();
+      e_ = lc.eltw_input();
+      dpkx_ = lc.eltw_input();
+      dpky_ = lc.eltw_input();
 
-      sig_.input(Q);
-      dpk_sig_.input(Q);
+      sig_.input(lc);
+      dpk_sig_.input(lc);
 
       nb_ = lc.template vinput<8>();
 
@@ -137,7 +136,7 @@ class mdoc_1f {
       }
 
       for (size_t j = 0; j < kMdoc1MaxSHABlocks; j++) {
-        sig_sha_[j].input(Q);
+        sig_sha_[j].input(lc);
       }
 
       // Cbor input init: note, the inC array will be constructed in the
@@ -145,11 +144,11 @@ class mdoc_1f {
       prepad_ = lc.template vinput<kMdoc1CborIndexBits>();
       mso_len_ = lc.template vinput<kMdoc1CborIndexBits>();
       for (size_t i = 0; i < kMdoc1MaxMsoLen; ++i) {
-        pwcb_[i].encoded_sel_header = Q.input();
+        pwcb_[i].encoded_sel_header = lc.eltw_input();
       }
-      gwcb_.invprod_decode = Q.input();
+      gwcb_.invprod_decode = lc.eltw_input();
       gwcb_.cc0_counter = CTRC.input();
-      gwcb_.invprod_parse = Q.input();
+      gwcb_.invprod_parse = lc.eltw_input();
 
       valid_.input(lc);
       valid_from_.input(lc);
@@ -167,7 +166,7 @@ class mdoc_1f {
           attrb_[ai].push_back(lc.template vinput<8>());
         }
         for (size_t j = 0; j < 2; j++) {
-          attr_sha_[ai][j].input(Q);
+          attr_sha_[ai][j].input(lc);
         }
         attr_mso_[ai].input(lc);
         attr_ei_[ai].input(lc);
@@ -222,8 +221,8 @@ class mdoc_1f {
     r_.unshift(vw.prepad_, kMdoc1MaxMsoLen, in_cb.data(),
                kMdoc1MaxMsoLen - 5 - 2, vw.in_ + 5 + 2, zz, 3);
 
-    std::vector<typename Cbor::decode> dsC(kMdoc1MaxMsoLen);
-    std::vector<typename Cbor::parse_output> psC(kMdoc1MaxMsoLen);
+    std::vector<typename CborL::decode> dsC(kMdoc1MaxMsoLen);
+    std::vector<typename CborL::parse_output> psC(kMdoc1MaxMsoLen);
     cbor_.decode_and_assert_decode_and_parse(kMdoc1MaxMsoLen, dsC.data(),
                                              psC.data(), in_cb.data(),
                                              vw.pwcb_.data(), vw.gwcb_);
@@ -344,8 +343,8 @@ class mdoc_1f {
   }
 
   void assert_path(size_t len, PathEntry p[], const Witness& vw,
-                   std::vector<typename Cbor::decode>& dsC,
-                   std::vector<typename Cbor::parse_output>& psC) const {
+                   std::vector<typename CborL::decode>& dsC,
+                   std::vector<typename CborL::parse_output>& psC) const {
     vind start = vw.prepad_;
     for (size_t i = 0; i < len; ++i) {
       cbor_.assert_map_entry(kMdoc1MaxMsoLen, start, i, p[i].ind.k, p[i].ind.v,
@@ -357,7 +356,7 @@ class mdoc_1f {
   }
 
   void assert_elt_as_be_bytes_at(size_t n, const vind& j, size_t len, EltW X,
-                                 const typename Cbor::decode ds[/*n*/]) const {
+                                 const typename CborL::decode ds[/*n*/]) const {
     const LogicCircuit& LC = lc_;  // shorthand
 
     std::vector<EltW> A(n);
@@ -393,8 +392,8 @@ class mdoc_1f {
   }
 
   Flatsha sha_;
-  Routing r_;
-  Cbor cbor_;
+  RoutingL r_;
+  CborL cbor_;
 };
 
 }  // namespace proofs

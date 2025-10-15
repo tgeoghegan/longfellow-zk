@@ -50,10 +50,10 @@ std::unique_ptr<Circuit<Field>> mk_add_circuit(size_t w, size_t nc,
   std::vector<BitWC> b(w);
   std::vector<BitWC> c(w + 1);
   for (size_t i = 0; i < w; ++i) {
-    a[i] = BitWC(Q.input(), F);
+    a[i] = LC.input();
   }
   for (size_t i = 0; i < w; ++i) {
-    b[i] = BitWC(Q.input(), F);
+    b[i] = LC.input();
   }
   BitWC carry;
   const char* name;
@@ -76,9 +76,9 @@ std::unique_ptr<Circuit<Field>> mk_add_circuit(size_t w, size_t nc,
       break;
   }
   for (size_t i = 0; i < w; ++i) {
-    Q.output(LC.eval(c[i]), i);
+    LC.output(c[i], i);
   }
-  Q.output(LC.eval(carry), w);
+  LC.output(carry, w);
 
   auto CIRCUIT = Q.mkcircuit(nc);
   dump_info<Field>(name, w, Q);
@@ -148,14 +148,14 @@ std::unique_ptr<Circuit<Field>> mk_multiplier_circuit(size_t w, size_t nc) {
   std::vector<BitWC> b(w);
   std::vector<BitWC> c(2 * w);
   for (size_t i = 0; i < w; ++i) {
-    a[i] = BitWC(Q.input(), F);
+    a[i] = LC.input();
   }
   for (size_t i = 0; i < w; ++i) {
-    b[i] = BitWC(Q.input(), F);
+    b[i] = LC.input();
   }
   LC.multiplier(w, c.data(), a.data(), b.data());
   for (size_t i = 0; i < 2 * w; ++i) {
-    Q.output(LC.eval(c[i]), i);
+    LC.output(c[i], i);
   }
   auto CIRCUIT = Q.mkcircuit(nc);
   dump_info<Field>("multiplier", w, Q);
@@ -244,8 +244,8 @@ TEST(Logic_Circuit, Comparison) {
       std::vector<BitWC> a(n), b(n);
 
       for (size_t i = 0; i < n; ++i) {
-        a[i] = BitWC(Q.input(), F);
-        b[i] = BitWC(Q.input(), F);
+        a[i] = LC.input();
+        b[i] = LC.input();
       }
 
       BitWC r;
@@ -265,7 +265,7 @@ TEST(Logic_Circuit, Comparison) {
           break;
       }
 
-      Q.output(LC.eval(r), 0);
+      LC.output(r, 0);
 
       auto CIRCUIT = Q.mkcircuit(/*nc=*/1);
       dump_info<Field>(name, n, Q);
@@ -287,7 +287,7 @@ void mk_gf2_polymul(size_t w, const Field& f) {
   }
   LC.gf2_polynomial_multiplier_karat(w, c2.data(), a.data(), b.data());
   for (size_t i = 0; i < 2 * w; ++i) {
-    Q.output(LC.eval(c2[i]), i);
+    LC.output(c2[i], i);
   }
   auto CIRCUIT = Q.mkcircuit(1);
   dump_info<Field>("GF2^k mul", w, Q);

@@ -90,7 +90,7 @@ CircuitGenerationErrorCode generate_circuit(const ZkSpecStruct* zk_spec,
     const LogicCircuit lc(&cbk, p256_base);
     MdocSignature mdoc_s(lc, p256, n256_order);
 
-    EltW pkX = Q.input(), pkY = Q.input(), htr = Q.input();
+    EltW pkX = lc.eltw_input(), pkY = lc.eltw_input(), htr = lc.eltw_input();
     MACTag mac[7]; /* 3 macs + av */
     for (size_t i = 0; i < 7; ++i) {
       mac[i] = lc.vinput<128>();
@@ -99,7 +99,7 @@ CircuitGenerationErrorCode generate_circuit(const ZkSpecStruct* zk_spec,
 
     // Allocate this large object on heap.
     auto w = std::make_unique<MdocSignature::Witness>();
-    w->input(Q, lc);
+    w->input(lc);
     mdoc_s.assert_signatures(pkX, pkY, htr, &mac[0], &mac[2], &mac[4], mac[6],
                              *w);
 
@@ -143,7 +143,7 @@ CircuitGenerationErrorCode generate_circuit(const ZkSpecStruct* zk_spec,
 
     MACTag mac[7]; /* 3 macs + av */
     for (size_t i = 0; i < 7; ++i) {
-      mac[i] = Q.input();
+      mac[i] = lc.eltw_input();
     }
 
     Q.private_input();
@@ -153,12 +153,12 @@ CircuitGenerationErrorCode generate_circuit(const ZkSpecStruct* zk_spec,
 
     // Allocate this large object on heap.
     auto w = std::make_unique<MdocHash::Witness>(number_of_attributes);
-    w->input(Q, lc);
+    w->input(lc);
 
     Q.begin_full_field();
     MACWitness macw[3]; /* MACs for e, dpkx, dpky */
     for (size_t i = 0; i < 3; ++i) {
-      macw[i].input(lc, Q);
+      macw[i].input(lc);
     }
 
     mdoc_h.assert_valid_hash_mdoc(oa.data(), now, e, dpkx, dpky, *w);

@@ -401,9 +401,9 @@ std::unique_ptr<Circuit<Fp256Base>> make_circuit(const Fp256Base& f) {
   JWTC jwtc(lc, p256, n256_order);
 
   EltW pkX, pkY, e2;
-  pkX = Q.input();
-  pkY = Q.input();
-  e2 = Q.input();
+  pkX = lc.eltw_input();
+  pkY = lc.eltw_input();
+  e2 = lc.eltw_input();
 
   std::vector<typename JWTC::OpenedAttribute> oa;
   for (size_t i = 0; i < 1; ++i) {
@@ -413,7 +413,7 @@ std::unique_ptr<Circuit<Fp256Base>> make_circuit(const Fp256Base& f) {
   }
   Q.private_input();
   typename JWTC::Witness vwc;
-  vwc.input(Q, lc, 1);
+  vwc.input(lc, 1);
 
   jwtc.assert_jwt_attributes(pkX, pkY, e2, oa.data(), vwc);
 

@@ -17,7 +17,6 @@
 
 #include <cstddef>
 
-#include "circuits/compiler/compiler.h"
 #include "circuits/ecdsa/verify_circuit.h"
 #include "circuits/logic/bit_plucker.h"
 #include "circuits/mdoc/mdoc_revocation_constants.h"
@@ -80,18 +79,18 @@ class MdocRevocationSpan {
     v256 e_bits_;
     ShaBlockWitness sha_[2];
 
-    void input(QuadCircuit<Field>& Q, const LogicCircuit& lc) {
-      r_ = Q.input();
-      s_ = Q.input();
-      e_ = Q.input();
-      rev_sig_.input(Q);
+    void input(const LogicCircuit& lc) {
+      r_ = lc.eltw_input();
+      s_ = lc.eltw_input();
+      e_ = lc.eltw_input();
+      rev_sig_.input(lc);
       for (size_t i = 0; i < 64 * 2; ++i) {
         preimage_[i] = lc.template vinput<8>();
       }
       id_bits_ = lc.template vinput<256>();
       e_bits_ = lc.template vinput<256>();
       for (size_t j = 0; j < 2; j++) {
-        sha_[j].input(Q);
+        sha_[j].input(lc);
       }
     }
   };

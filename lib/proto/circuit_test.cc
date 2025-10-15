@@ -133,8 +133,8 @@ TEST(circuit_io, ecdsa) {
     Verc verc(LC, p256, order);
     Verc::Witness vwc;
 
-    EltW pkx = Q.input(), pky = Q.input(), e = Q.input();
-    vwc.input(Q);
+    EltW pkx = LC.eltw_input(), pky = LC.eltw_input(), e = LC.eltw_input();
+    vwc.input(LC);
 
     verc.verify_signature3(pkx, pky, e, vwc);
 
@@ -174,17 +174,7 @@ TEST(circuit_io, SHA) {
 
     std::vector<FlatShaC::BlockWitness> bwW(kBlocks);
     for (size_t j = 0; j < kBlocks; j++) {
-      for (size_t k = 0; k < 48; ++k) {
-        bwW[j].outw[k] = FlatShaC::packed_input(Q);
-      }
-      for (size_t k = 0; k < 64; ++k) {
-        bwW[j].oute[k] = FlatShaC::packed_input(Q);
-        bwW[j].outa[k] = FlatShaC::packed_input(Q);
-      }
-
-      for (size_t k = 0; k < 8; ++k) {
-        bwW[j].h1[k] = FlatShaC::packed_input(Q);
-      }
+      bwW[j].input(lc);
     }
 
     fsha.assert_message(kBlocks, numbW, inW.data(), bwW.data());

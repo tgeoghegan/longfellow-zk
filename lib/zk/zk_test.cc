@@ -102,10 +102,10 @@ class ZKTest : public testing::Test {
 
       Verc verc(lc, p256, n256_order);
 
-      EltW pkx = Q.input(), pky = Q.input(), e = Q.input();
+      EltW pkx = lc.eltw_input(), pky = lc.eltw_input(), e = lc.eltw_input();
       Q.private_input();
       Verc::Witness vwc;
-      vwc.input(Q);
+      vwc.input(lc);
       verc.verify_signature3(pkx, pky, e, vwc);
       circuit1_ = Q.mkcircuit(1).release();
     }
@@ -259,10 +259,10 @@ TEST(ZK, Rfc_testvector1) {
     QuadCircuit<Fp128> Q(Fg);
     CompilerBackend cbk(&Q);
     const LogicCircuit LC(&cbk, Fg);
-    EltW n = Q.input();
+    EltW n = LC.eltw_input();
     Q.private_input();
-    EltW m = Q.input();
-    EltW s = Q.input();
+    EltW m = LC.eltw_input();
+    EltW s = LC.eltw_input();
     EltW sm2 = LC.sub(&s, LC.konst(2));
     EltW m2 = LC.mul(&m, m);
     EltW sm2m2 = LC.mul(&sm2, m2);

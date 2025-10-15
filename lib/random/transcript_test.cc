@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 
 #include "algebra/fp.h"
 #include "gtest/gtest.h"
@@ -118,7 +119,7 @@ TEST(Transcript, GenArrayChallenge) {
 }
 
 TEST(Transcript, TestWriteByteArray) {
-  Transcript ts((uint8_t *)"test", 4);
+  Transcript ts((uint8_t*)"test", 4);
   // write a byte array
   uint8_t d[100];
   for (size_t i = 0; i < 100; ++i) {
@@ -137,7 +138,7 @@ TEST(Transcript, TestWriteByteArray) {
 }
 
 TEST(Transcript, TestWriteFieldElement) {
-  Transcript ts((uint8_t *)"test", 4);
+  Transcript ts((uint8_t*)"test", 4);
 
   // write a field element
   ts.write(F.of_scalar(7), F);
@@ -153,7 +154,7 @@ TEST(Transcript, TestWriteFieldElement) {
 }
 
 TEST(Transcript, TestWriteFieldElementArray) {
-  Transcript ts((uint8_t *)"test", 4);
+  Transcript ts((uint8_t*)"test", 4);
 
   // write a field element array
   Elt array[2] = {F.of_scalar(8), F.of_scalar(9)};

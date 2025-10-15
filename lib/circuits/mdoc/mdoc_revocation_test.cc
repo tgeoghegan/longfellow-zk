@@ -65,12 +65,12 @@ TEST(mdoc, mdoc_revocation_list_test) {
     MdocRevocation mdr(LC);
     EltW list[kListSize];
     for (size_t i = 0; i < kListSize; ++i) {
-      list[i] = Q.input();
+      list[i] = LC.eltw_input();
     }
 
     Q.private_input();
-    EltW id = Q.input();
-    EltW inv = Q.input();
+    EltW id = LC.eltw_input();
+    EltW inv = LC.eltw_input();
 
     mdr.assert_not_on_list(list, kListSize, id, inv);
 
@@ -160,13 +160,13 @@ std::unique_ptr<Circuit<Fp256Base>> make_circuit(const Fp256Base& f) {
 
   MdocRevocation mdspan(lc, p256, n256_order);
   EltW crapkX, crapkY;
-  crapkX = Q.input();
-  crapkY = Q.input();
+  crapkX = lc.eltw_input();
+  crapkY = lc.eltw_input();
 
   Q.private_input();
-  EltW id = Q.input();
+  EltW id = lc.eltw_input();
   typename MdocRevocation::Witness vwc;
-  vwc.input(Q, lc);
+  vwc.input(lc);
 
   mdspan.assert_not_on_list(crapkX, crapkY, id, vwc);
 

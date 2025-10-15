@@ -29,8 +29,8 @@ static const RequestedAttribute age_over_18 = {
     .cbor_value_len = 1};
 
 static const RequestedAttribute europa_age_over_18 = {
-    .namespace_id = {'e', 'u', '.', 'e', 'u', 'r', 'o', 'p', 'a', '.', 'e',
-                     'c', '.', 'a', 'v', '.', '1'},
+    .namespace_id = {'e', 'u', '.', 'e', 'u', 'r', 'o', 'p', 'a', '.', 'e', 'c',
+                     '.', 'a', 'v', '.', '1'},
     .id = {'a', 'g', 'e', '_', 'o', 'v', 'e', 'r', '_', '1', '8'},
     .cbor_value = {0xf5},
     .namespace_len = 17,
@@ -124,13 +124,23 @@ static const RequestedAttribute issue_date_2025_07_21 = {
     .cbor_value_len = 22};
 
 static const RequestedAttribute aamva_name_suffix_mr = {
-    .namespace_id = {'o', 'r', 'g', '.', 'i', 's', 'o', '.', '1', '8', '0', '1',
-                     '3', '.', '5', '.', 'a', 'a', 'm', 'v', 'a'},
+    .namespace_id = {'o', 'r', 'g', '.', 'i', 's', 'o', '.', '1', '8', '0',
+                     '1', '3', '.', '5', '.', 'a', 'a', 'm', 'v', 'a'},
     .id = {'n', 'a', 'm', 'e', '_', 's', 'u', 'f', 'f', 'i', 'x'},
     .cbor_value = {0x63, 'M', 'r', '.'},
     .namespace_len = 21,
     .id_len = 11,
     .cbor_value_len = 4};
+
+static const RequestedAttribute aamva_dhs_compliance = {
+    .namespace_id = {'o', 'r', 'g', '.', 'i', 's', 'o', '.', '1', '8', '0',
+                     '1', '3', '.', '5', '.', 'a', 'a', 'm', 'v', 'a'},
+    .id = {'D', 'H', 'S', '_', 'c', 'o', 'm', 'p', 'l', 'i', 'a', 'n', 'c',
+           'e'},
+    .cbor_value = {0x61, 'F'},
+    .namespace_len = 21,
+    .id_len = 14,
+    .cbor_value_len = 2};
 
 }  // namespace test
 }  // namespace proofs

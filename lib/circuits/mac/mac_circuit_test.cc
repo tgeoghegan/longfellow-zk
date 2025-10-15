@@ -64,7 +64,7 @@ TEST(MAC, full_circuit_test_128) {
     v128 mv[kNum][2];
     v128 a_v[kNum];
     for (size_t i = 0; i < kNum; ++i) {
-      msg[i] = Q.input();
+      msg[i] = LC.eltw_input();
       mv[i][0] = LC.vinput<128>();
       mv[i][1] = LC.vinput<128>();
       a_v[i] = LC.vinput<128>();
@@ -72,7 +72,7 @@ TEST(MAC, full_circuit_test_128) {
 
     Q.private_input();
     for (size_t i = 0; i < kNum; ++i) {
-      vwc[i].input(LC, Q);
+      vwc[i].input(LC);
     }
     for (size_t i = 0; i < kNum; ++i) {
       mac.verify_mac(msg[i], mv[i], a_v[i], vwc[i], n256_order);
@@ -159,10 +159,10 @@ TEST(MAC, full_circuit_GF2_128) {
     MACCircuit::Witness vwc;
 
     v256 msg = LC.vinput<256>();
-    EltW mv[2] = {Q.input(), Q.input()};
-    EltW a_v = Q.input();
+    EltW mv[2] = {LC.eltw_input(), LC.eltw_input()};
+    EltW a_v = LC.eltw_input();
     Q.private_input();
-    vwc.input(LC, Q);
+    vwc.input(LC);
     mac.verify_mac(mv, a_v, msg, vwc);
 
     circuit = Q.mkcircuit(1);

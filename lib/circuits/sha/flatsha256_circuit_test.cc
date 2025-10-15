@@ -357,15 +357,15 @@ std::unique_ptr<Circuit<Field>> test_block_circuit_size(const Field& f,
   } else {
     std::vector<packed_v32C> vH0(8), vH1(8), voutw(48), voute(64), vouta(64);
     for (size_t i = 0; i < 8; ++i) {
-      vH0[i] = FlatShaC::packed_input(Q);
-      vH1[i] = FlatShaC::packed_input(Q);
+      vH0[i] = FlatShaC::packed_input(LC);
+      vH1[i] = FlatShaC::packed_input(LC);
     }
     for (size_t i = 0; i < 48; ++i) {
-      voutw[i] = FlatShaC::packed_input(Q);
+      voutw[i] = FlatShaC::packed_input(LC);
     }
     for (size_t i = 0; i < 64; ++i) {
-      voute[i] = FlatShaC::packed_input(Q);
-      vouta[i] = FlatShaC::packed_input(Q);
+      voute[i] = FlatShaC::packed_input(LC);
+      vouta[i] = FlatShaC::packed_input(LC);
     }
     FSHAC.assert_transform_block(vin.data(), vH0.data(), voutw.data(),
                                  voute.data(), vouta.data(), vH1.data());
@@ -380,15 +380,6 @@ std::unique_ptr<Circuit<Field>> test_block_circuit_size(const Field& f,
       zkpr.param.block, zkpr.param.block_enc, zkpr.param.nrow);
 
   return CIRCUIT;
-}
-
-template <typename T>
-T packed_input(QuadCircuit<Field>& Q) {
-  T r;
-  for (size_t i = 0; i < r.size(); ++i) {
-    r[i] = Q.input();
-  }
-  return r;
 }
 
 TEST(FlatSHA256_Circuit, block_size_p256) {
@@ -466,7 +457,7 @@ std::unique_ptr<Circuit<Field>> make_circuit(size_t numBlocks, size_t numCopies,
 
   std::vector<ShaBlockWitness> bw(numBlocks);
   for (size_t j = 0; j < numBlocks; j++) {
-    bw[j].input(Q);
+    bw[j].input(lc);
   }
 
   sha.assert_message_hash(numBlocks, nb, &in[0], target, &bw[0]);
