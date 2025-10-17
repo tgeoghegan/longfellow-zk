@@ -973,7 +973,11 @@ class Logic {
   // this class compiles even with backends that do not support I/O,
   // as long as you don't expand vinput(), voutput().
   EltW eltw_input() const { return bk_->input_wire(); }
-  BitW input() const { return BitW(bk_->input_wire(), f_); }
+  BitW input() const {
+    BitW x(bk_->input_wire(), f_);
+    assert_is_bit(x);
+    return x;
+  }
   void output(const EltW& x, size_t i) const { bk_->output_wire(x, i); }
   void output(const BitW& x, size_t i) const { output(eval(x), i); }
   size_t wire_id(const BitW& v) const { return bk_->wire_id(v.x); }

@@ -204,8 +204,16 @@ class mdoc_1f {
     ecc.verify_signature3(pkX, pkY, vw.e_, vw.sig_);
     ecc.verify_signature3(vw.dpkx_, vw.dpky_, hash_tr, vw.dpk_sig_);
 
-    sha_.assert_message_with_prefix(kMdoc1MaxSHABlocks, vw.nb_, vw.in_,
-                                    kCose1Prefix, kCose1PrefixLen, vw.sig_sha_);
+    // Construct the message to hash by concatenating the prefix and the input.
+    std::vector<v8> bbuf(64 * kMdoc1MaxSHABlocks);
+    for (size_t i = 0; i < 64 * kMdoc1MaxSHABlocks; ++i) {
+      if (i < kCose1PrefixLen) {
+        lc_.bits(8, bbuf[i].data(), kCose1Prefix[i]);
+      } else {
+        bbuf[i] = vw.in_[i - kCose1PrefixLen];
+      }
+    }
+    sha_.assert_message(kMdoc1MaxSHABlocks, vw.nb_, bbuf.data(), vw.sig_sha_);
     // Verify that the hash of the mdoc is equal to e.
     assert_hash(vw.e_, vw);
 

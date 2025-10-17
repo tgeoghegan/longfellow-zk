@@ -172,8 +172,11 @@ TEST(Logic_Circuit, Multiplier) {
   set_log_level(INFO);
   constexpr size_t nc = 1;
 
+  BitW ab[64], bb[64], cb[128];
+
   // for all widths w x w -> 2w
   for (size_t w = 1; w <= 8; ++w) {
+    log(INFO, "w: %zu", w);
     auto CIRCUIT = mk_multiplier_circuit(w, nc);
 
     // Test 1: verify the circuit for all w-bit boolean inputs
@@ -186,44 +189,23 @@ TEST(Logic_Circuit, Multiplier) {
         for (size_t i = 0; i < w; ++i) {
           W->v_[1 + i] = L.eval(L.bit((a >> i) & 1)).elt();
           W->v_[w + 1 + i] = L.eval(L.bit((b >> i) & 1)).elt();
+          ab[i] = BitW(L.konst((a >> i) & 1), F);
+          bb[i] = BitW(L.konst((b >> i) & 1), F);
         }
 
         Prover<Field>::inputs in;
         Prover<Field> prover(F);
         auto V = prover.eval_circuit(&in, CIRCUIT.get(), W->clone(), F);
+        L.multiplier(w, cb, ab, bb);
 
         size_t c = a * b;
         size_t outputw = (w == 1) ? 1 : 2 * w;
-        EXPECT_EQ(outputw, V->n1_);
+        // For the special case of w == 1, the assert_bit checks add outputs.
+        if (w > 1) { EXPECT_EQ(outputw, V->n1_); }
         for (size_t i = 0; i < outputw; ++i) {
           EXPECT_EQ(V->v_[i], L.eval(L.bit((c >> i) & 1)).elt());
+          EXPECT_EQ(V->v_[i], L.eval(cb[i]).elt());
         }
-      }
-    }
-
-    // Test 2: compare against the reference implementation for
-    // random field elements, to verify that the arithmetization
-    // is the same.
-    Bogorng<Field> rng(&F);
-    BitW a[64], b[64], c[128];
-    auto W = std::make_unique<Dense<Field>>(
-        nc, /*constant one*/ 1 + /*a*/ w + /*b*/ w);
-    for (size_t round = 0; round < 10; ++round) {
-      W->v_[0] = F.one();
-      for (size_t i = 0; i < w; ++i) {
-        a[i] = BitW(L.konst(W->v_[1 + i] = rng.next()), F);
-        b[i] = BitW(L.konst(W->v_[w + 1 + i] = rng.next()), F);
-      }
-
-      Prover<Field>::inputs in;
-      Prover<Field> prover(F);
-      auto V = prover.eval_circuit(&in, CIRCUIT.get(), W->clone(), F);
-
-      L.multiplier(w, c, a, b);
-      size_t outputw = (w == 1) ? 1 : 2 * w;
-      EXPECT_EQ(outputw, V->n1_);
-      for (size_t i = 0; i < outputw; ++i) {
-        EXPECT_EQ(V->v_[i], L.eval(c[i]).elt());
       }
     }
   }

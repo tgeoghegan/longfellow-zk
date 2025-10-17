@@ -14,7 +14,8 @@
 
 add_library(algebra OBJECT nat.cc crt.cc)
 
-proofs_add_tests(fft_interpolation_test interpolation_test
-reed_solomon_test fft_test limb_test rfft_test fp2_test
-nat_test sysdep_test fp_test poly_test utility_test)
+proofs_add_tests(crt_test interpolation_test poly_test
+fft_interpolation_test limb_test reed_solomon_test fft_test nat_test
+rfft_test fp2_test nussbaumerfp2_test sysdep_test fp_test
+nussbaumer_test utility_test)
 
