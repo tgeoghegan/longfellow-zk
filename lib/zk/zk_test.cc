@@ -336,10 +336,16 @@ TEST(ZK, Rfc_testvector1) {
   zkpr.write_com(zkpr.com, com_bytes, Fg);
   dump("commit", com_bytes);
 
-  EXPECT_TRUE(zkp.prove(zkpr, W, tp));
+  EXPECT_TRUE(zkp.prove(zkpr, W, tlp));
   std::vector<uint8_t> ligero_bytes;
   zkpr.write_com_proof(zkpr.com_proof, ligero_bytes, Fg);
   dump("ligero_proof", ligero_bytes);
+
+  printf("quadratic constraints\n");
+  for (size_t i = 0; i < zkp.lqc_.size(); i++) {
+    printf("x: %zu y: %zu z: %zu\n", zkp.lqc_[i].x, zkp.lqc_[i].y,
+           zkp.lqc_[i].z);
+  }
 }
 
 }  // namespace

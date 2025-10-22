@@ -30,6 +30,12 @@ class LigeroTranscript {
 
   static void write_commitment(const LigeroCommitment<Field>& commitment,
                                Transcript& ts) {
+    printf("ligero commitment to transcript: ");
+    for (size_t i = 0; i < commitment.root.kLength; i++) {
+      printf("%02x", commitment.root.data[i]);
+    }
+    printf("\n");
+
     ts.write(commitment.root.data, commitment.root.kLength);
   }
 
