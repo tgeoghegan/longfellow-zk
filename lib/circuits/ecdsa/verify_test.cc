@@ -374,7 +374,6 @@ std::unique_ptr<Circuit<Fp256Base>> make_circuit(size_t numSigs,
     verc.verify_signature3(pkx[i], pky[i], e[i], vwc[i]);
   }
   auto CIRCUIT = Q.mkcircuit(1);
-  dump_info("ecdsa verify", Q);
   return CIRCUIT;
 }
 
@@ -424,8 +423,7 @@ TEST(ECDSA, prover_verifier3_p256) {
   log(INFO, "Verify done");
 }
 
-// ================ Benchmarks =================================================
-void BM_ECDSASize(benchmark::State& state) {
+TEST(ECDSA, Size) {
   using CompilerBackend = CompilerBackend<Fp256Base>;
   using LogicCircuit = Logic<Fp256Base, CompilerBackend>;
   using EltW = LogicCircuit::EltW;
@@ -445,8 +443,8 @@ void BM_ECDSASize(benchmark::State& state) {
   auto CIRCUIT = Q.mkcircuit(/*nc=*/1);
   dump_info("ecdsa verify3", Q);
 }
-BENCHMARK(BM_ECDSASize);
 
+// ================ Benchmarks =================================================
 void BM_ECDSASumcheckProver(benchmark::State& state) {
   size_t numSigs = state.range(0);
   std::unique_ptr<Circuit<Fp256Base>> CIRCUIT =
@@ -467,7 +465,7 @@ void BM_ECDSACommit(benchmark::State& state) {
   size_t numSigs = state.range(0);
   std::unique_ptr<Circuit<Fp256Base>> CIRCUIT =
       make_circuit(numSigs, p256_base);
-
+  set_log_level(ERROR);     // Quiet all of the intermediate output.
   auto W = Dense<Fp256Base>(1, CIRCUIT->ninputs);
 
   using f2_p256 = Fp2<Fp256Base>;
@@ -481,8 +479,8 @@ void BM_ECDSACommit(benchmark::State& state) {
       "112649224146410281873500457609690258373018840430489408729223714171582664"
       "680802";
   static constexpr char kRootY[] =
-      "317040948518153410669569855215889129699039744181079354462206130544166376"
-      "41043";
+      "840879943585409076957404614278186605601821689971823787493130182544504602"
+      "12908";
 
   fill_input(W, numSigs, p256_base);
   const Elt2 omega = p256_2.of_string(kRootX, kRootY);
@@ -505,6 +503,7 @@ void BM_ECDSAZKProver(benchmark::State& state) {
   std::unique_ptr<Circuit<Fp256Base>> CIRCUIT =
       make_circuit(numSigs, p256_base);
 
+  set_log_level(ERROR);
   auto W = Dense<Fp256Base>(1, CIRCUIT->ninputs);
 
   using f2_p256 = Fp2<Fp256Base>;
@@ -518,8 +517,8 @@ void BM_ECDSAZKProver(benchmark::State& state) {
       "112649224146410281873500457609690258373018840430489408729223714171582664"
       "680802";
   static constexpr char kRootY[] =
-      "317040948518153410669569855215889129699039744181079354462206130544166376"
-      "41043";
+      "840879943585409076957404614278186605601821689971823787493130182544504602"
+      "12908";
 
   fill_input(W, numSigs, p256_base);
   const Elt2 omega = p256_2.of_string(kRootX, kRootY);
@@ -542,6 +541,7 @@ void BM_ECDSAZKVerifier(benchmark::State& state) {
   size_t numSigs = state.range(0);
   std::unique_ptr<Circuit<Fp256Base>> CIRCUIT =
       make_circuit(numSigs, p256_base);
+  set_log_level(ERROR);
 
   auto W = Dense<Fp256Base>(1, CIRCUIT->ninputs);
 
@@ -556,8 +556,8 @@ void BM_ECDSAZKVerifier(benchmark::State& state) {
       "112649224146410281873500457609690258373018840430489408729223714171582664"
       "680802";
   static constexpr char kRootY[] =
-      "317040948518153410669569855215889129699039744181079354462206130544166376"
-      "41043";
+      "840879943585409076957404614278186605601821689971823787493130182544504602"
+      "12908";
 
   fill_input(W, numSigs, p256_base);
   const Elt2 omega = p256_2.of_string(kRootX, kRootY);
@@ -573,10 +573,10 @@ void BM_ECDSAZKVerifier(benchmark::State& state) {
   prover.prove(zkpr, W, tp);
 
   ZkVerifier<Fp256Base, RSFactory> verifier(*CIRCUIT, rsf, 4, 128, p256_base);
-  Transcript tv((uint8_t *)"verify_test", 11);
   auto pub = Dense<Fp256Base>(1, CIRCUIT->npub_in);
   fill_input(pub, numSigs, p256_base, false);
   for (auto s : state) {
+    Transcript tv((uint8_t *)"verify_test", 11);
     verifier.recv_commitment(zkpr, tv);
     verifier.verify(zkpr, pub, tv);
   }

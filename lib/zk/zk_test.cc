@@ -62,8 +62,8 @@ class ZKTest : public testing::Test {
                                  "2fe38e6f58626767f9e75")),
         omega_x_(p256_base.of_string("0xf90d338ebd84f5665cfc85c67990e3379fc9563"
                                      "b382a4a4c985a65324b242562")),
-        omega_y_(p256_base.of_string("0x4617e1bc436833b35fb03d1dfef91cbf7b8c759"
-                                     "c8b2dcd39240be8b09f5bc153")),
+        omega_y_(p256_base.of_string("0xb9e81e42bc97cc4da04fc2e20106e34084738a6"
+                                     "474d232c6dbf4174f60a43eac")),
         e_("0x2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7a"
            "e"),
         r_("0xc71bcbfb28bbe06299a225f057797aaf5f22669e90475de5f64176b2612671"),
