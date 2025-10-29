@@ -34,10 +34,8 @@
 #include "random/random.h"
 #include "random/transcript.h"
 #include "sumcheck/circuit.h"
-#include "sumcheck/prover.h"
 #include "util/log.h"
 #include "util/readbuffer.h"
-#include "zk/zk_common.h"
 #include "zk/zk_proof.h"
 #include "zk/zk_prover.h"
 #include "zk/zk_testing.h"
@@ -218,12 +216,10 @@ TEST(ZK, test_circuit_io) {
 
 void dump(const char* msg, const std::vector<uint8_t> bytes) {
   size_t sz = bytes.size();
-  log(INFO, "%s size: %zu", msg, sz);
 
   for (size_t i = 0; i < sz; ++i) {
     printf("%02x", bytes[i]);
   }
-  printf("\n");
 }
 
 // This mock random engine returns a fixed sequence of random bytes in order
@@ -280,7 +276,9 @@ TEST(ZK, Rfc_testvector1) {
   std::vector<uint8_t> bytes;
   CircuitRep<Fp128> cr(Fg, FP128_ID);
   cr.to_bytes(*circuit, bytes);
+  printf("\"serialized_circuit\": \"");
   dump("circuit", bytes);
+  printf("\",\n");
 
   // Sample input.
   auto W = Dense<Fp128>(1, circuit->ninputs);
@@ -291,61 +289,66 @@ TEST(ZK, Rfc_testvector1) {
   filler.push_back(Fg.of_scalar(5));
   filler.push_back(Fg.of_scalar(6));
 
-  Transcript tp((uint8_t*)"test", 4);
+  Transcript transcript((uint8_t*)"test", 4);
+  TestRandomEngine rng;
 
-  // Sumcheck on the circuit.
-  ZkCommon<Fp128>::initialize_sumcheck_fiat_shamir(tp, *circuit, W, Fg);
-
-  ZkProof<Fp128> zkpr(*circuit, 4, 6);
-  Prover<Fp128>::inputs in;
-  Prover<Fp128> sc_prover(Fg);
-  auto V = sc_prover.eval_circuit(&in, circuit.get(), W.clone(), Fg);
-  EXPECT_TRUE(V != nullptr);
-  for (size_t i = 0; i < V->n1_; ++i) {
-    EXPECT_EQ(V->v_[i], Fg.zero());
-  }
-  sc_prover.prove(&zkpr.proof, nullptr, circuit.get(), in, tp);
-  std::vector<uint8_t> sc_bytes;
-  zkpr.write_sc_proof(zkpr.proof, sc_bytes, Fg);
-  dump("sc_proof", sc_bytes);
-
-  // Ligero proof.
   using FftConvolutionFactory = FFTConvolutionFactory<Fp128>;
   auto omega = Fg.of_string("164956748514267535023998284330560247862");
   uint64_t omega_order = 1ull << 32;
   FftConvolutionFactory fft(Fg, omega, omega_order);
   using RSFactory = ReedSolomonFactory<Fp128, FftConvolutionFactory>;
   const RSFactory rsf(fft, Fg);
-  auto zkp = ZkProver<Fp128, RSFactory>(*circuit, Fg, rsf);
-  TestRandomEngine rng;
-  Transcript tlp((uint8_t*)"test", 4);
-  zkp.commit(zkpr, W, tlp, rng);
 
-  log(INFO, "params: b:%zu be:%zu nrow:%zu w:%zu r: %zu nq:%zu qr:%zu wit:%zu",
-      zkpr.param.block, zkpr.param.block_enc, zkpr.param.nrow, zkpr.param.w,
-      zkpr.param.r, zkpr.param.nqtriples, zkpr.param.nq, zkp.witness_.size());
+  ZkProof<Fp128> zk_proof(*circuit, 4, 6);
+  ZkProver<Fp128, RSFactory> prover(*circuit, Fg, rsf);
+  prover.commit(zk_proof, W, transcript, rng);
+  EXPECT_TRUE(prover.prove(zk_proof, W, transcript));
 
-  // Print the tableau.
-  std::vector<uint8_t> buf(16, 0);
-  for (size_t i = 0; i < zkp.witness_.size(); ++i) {
-    Fg.to_bytes_field(&buf[0], zkp.witness_[i]);
-    dump("block", buf);
+  printf("done proving\n");
+
+  std::vector<uint8_t> sumcheck_proof_bytes;
+  zk_proof.write_sc_proof(zk_proof.proof, sumcheck_proof_bytes, Fg);
+  printf("\"sumcheck_proof\": \"");
+  dump("sumcheck_proof", sumcheck_proof_bytes);
+  printf("\",\n");
+
+  std::vector<uint8_t> commitment_bytes;
+  zk_proof.write_com(zk_proof.com, commitment_bytes, Fg);
+  printf("\"ligero_commitment\": \"");
+  dump("ligero commitment", commitment_bytes);
+  printf("\",\n");
+
+  printf("\"constraints\": {\n");
+  printf("    \"linear_rhs\": [\n");
+    std::vector<uint8_t> buf(16, 0);
+  for (size_t i = 0; i < prover.linear_constraint_rhs_.size(); i++) {
+    Fg.to_bytes_field(&buf[0], prover.linear_constraint_rhs_[i]);
+    printf("        \"");
+    dump("", buf);
+    printf("\"");
+    if (i + 1 != prover.linear_constraint_rhs_.size()) {
+        printf(",");
+    }
+    printf("\n");
   }
+  printf("    ],\n"); // linear_rhs
+  printf("    \"quadratic\": [\n");
+  for (size_t i = 0; i < prover.lqc_.size(); i++) {
+    printf("        { \"x\": %zu, \"y\": %zu, \"z\": %zu }", prover.lqc_[i].x, prover.lqc_[i].y,
+           prover.lqc_[i].z);
+    if (i + 1 != prover.lqc_.size()) {
+      printf(",");
+    }
+    printf("\n");
+  }
+  printf("    ]\n"); // quadratic
+  printf("}\n"); // constraints
 
-  std::vector<uint8_t> com_bytes;
-  zkpr.write_com(zkpr.com, com_bytes, Fg);
-  dump("commit", com_bytes);
-
-  EXPECT_TRUE(zkp.prove(zkpr, W, tlp));
   std::vector<uint8_t> ligero_bytes;
-  zkpr.write_com_proof(zkpr.com_proof, ligero_bytes, Fg);
+  zk_proof.write_com_proof(zk_proof.com_proof, ligero_bytes, Fg);
+  printf("\"ligero_proof\": \"");
   dump("ligero_proof", ligero_bytes);
-
-  printf("quadratic constraints\n");
-  for (size_t i = 0; i < zkp.lqc_.size(); i++) {
-    printf("x: %zu y: %zu z: %zu\n", zkp.lqc_[i].x, zkp.lqc_[i].y,
-           zkp.lqc_[i].z);
-  }
+  printf("\",\n");
 }
 
 }  // namespace

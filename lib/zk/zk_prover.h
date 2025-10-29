@@ -15,13 +15,11 @@
 #ifndef PRIVACY_PROOFS_ZK_LIB_ZK_ZK_PROVER_H_
 #define PRIVACY_PROOFS_ZK_LIB_ZK_ZK_PROVER_H_
 
-#include <cstdint>
 #include <stddef.h>
 
 #include <memory>
 #include <vector>
 
-#include "algebra/fp_generic.h"
 #include "arrays/dense.h"
 #include "ligero/ligero_param.h"
 #include "ligero/ligero_prover.h"
@@ -37,16 +35,6 @@
 
 namespace proofs {
 
-void dump(const char *msg, const std::vector<uint8_t> bytes) {
-  size_t sz = bytes.size();
-
-  printf("\"");
-
-  for (size_t i = 0; i < sz; ++i) {
-    printf("%02x", bytes[i]);
-  }
-  printf("\"");
-}
 // ZK Prover
 //
 // This class implements a zero-knowledge argument over a sumcheck transcript
@@ -143,18 +131,9 @@ class ZkProver : public ProverLayers<Field> {
     // 5. Simulate the verifier to assemble constraints on the committed vals.
     //    Form the sparse matrix A and vector b such that A*w = b.
     std::vector<LigeroLinearConstraint<Field>> a;
-    std::vector<Elt> b;
     size_t ci = ZkCommon<Field>::verifier_constraints(c_, W, zkp.proof, &aux, a,
-                                                      b, tsp, n_witness_, f_);
+                                                      linear_constraint_rhs_, tsp, n_witness_, f_);
     log(INFO, "ZK constraints done");
-
-    printf("linear constraint rhses\n");
-    std::vector<uint8_t> buf(16, 0);
-    for (size_t i = 0; i < b.size(); i++) {
-      f_.to_bytes_field(&buf[0], b[i]);
-      dump("", buf);
-      printf(",\n");
-    }
 
     // 6. Produce proof over commitment.
     // For FS soundness, it is ok for hash_of_A to be any string.
@@ -171,14 +150,11 @@ class ZkProver : public ProverLayers<Field> {
 
   // Fill proof with random pad values for a given circuit.
   void fill_pad(RandomEngine& rng) {
-    bool fixed_pad = true;
-    Elt seven = f_.addf(f_.one(),f_.addf(f_.one(),f_.addf(f_.one(),f_.addf(f_.one(),f_.addf(f_.one(),f_.addf(f_.one(), f_.one()))))));
     for (size_t i = 0; i < c_.nl; ++i) {
       for (size_t j = 0; j < c_.logc; ++j) {
         for (size_t k = 0; k < 4; ++k) {
           if (k != 1) {  // P(1) optimization
-            Elt r;
-            if (fixed_pad) r = seven; else r = rng.elt(f_);
+            Elt r = rng.elt(f_);
             pad_.l[i].cp[j].t_[k] = r;
             witness_.push_back(r);
           } else {
@@ -190,8 +166,7 @@ class ZkProver : public ProverLayers<Field> {
         for (size_t h = 0; h < 2; ++h) {
           for (size_t k = 0; k < 3; ++k) {
             if (k != 1) {  // P(1) optimization
-            Elt r;
-            if (fixed_pad) r = seven; else r = rng.elt(f_);
+            Elt r = rng.elt(f_);
               pad_.l[i].hp[h][j].t_[k] = r;
               witness_.push_back(r);
             } else {
@@ -201,8 +176,7 @@ class ZkProver : public ProverLayers<Field> {
         }
       }
       for (size_t k = 0; k < 2; ++k) {
-        Elt r;
-        if (fixed_pad) r = seven; else r = rng.elt(f_);
+        Elt r = rng.elt(f_);
         pad_.l[i].wc[k] = r;
         witness_.push_back(r);
       }
@@ -219,6 +193,7 @@ class ZkProver : public ProverLayers<Field> {
   const ReedSolomonFactory& rsf_;
   Proof<Field> pad_;
   std::vector<Elt> witness_;
+  std::vector<Elt> linear_constraint_rhs_;
   std::vector<LigeroQuadraticConstraint> lqc_;
   std::unique_ptr<LigeroProver<Field, ReedSolomonFactory>> lp_;
 };
