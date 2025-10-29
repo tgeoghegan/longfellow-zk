@@ -34,6 +34,7 @@
 #include "zk/zk_proof.h"
 
 namespace proofs {
+
 // ZK Prover
 //
 // This class implements a zero-knowledge argument over a sumcheck transcript
@@ -130,9 +131,8 @@ class ZkProver : public ProverLayers<Field> {
     // 5. Simulate the verifier to assemble constraints on the committed vals.
     //    Form the sparse matrix A and vector b such that A*w = b.
     std::vector<LigeroLinearConstraint<Field>> a;
-    std::vector<Elt> b;
     size_t ci = ZkCommon<Field>::verifier_constraints(c_, W, zkp.proof, &aux, a,
-                                                      b, tsp, n_witness_, f_);
+                                                      linear_constraint_rhs_, tsp, n_witness_, f_);
     log(INFO, "ZK constraints done");
 
     // 6. Produce proof over commitment.
@@ -166,7 +166,7 @@ class ZkProver : public ProverLayers<Field> {
         for (size_t h = 0; h < 2; ++h) {
           for (size_t k = 0; k < 3; ++k) {
             if (k != 1) {  // P(1) optimization
-              Elt r = rng.elt(f_);
+            Elt r = rng.elt(f_);
               pad_.l[i].hp[h][j].t_[k] = r;
               witness_.push_back(r);
             } else {
@@ -193,6 +193,7 @@ class ZkProver : public ProverLayers<Field> {
   const ReedSolomonFactory& rsf_;
   Proof<Field> pad_;
   std::vector<Elt> witness_;
+  std::vector<Elt> linear_constraint_rhs_;
   std::vector<LigeroQuadraticConstraint> lqc_;
   std::unique_ptr<LigeroProver<Field, ReedSolomonFactory>> lp_;
 };
