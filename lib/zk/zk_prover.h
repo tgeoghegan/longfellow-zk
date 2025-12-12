@@ -130,9 +130,8 @@ class ZkProver : public ProverLayers<Field> {
     // 5. Simulate the verifier to assemble constraints on the committed vals.
     //    Form the sparse matrix A and vector b such that A*w = b.
     std::vector<LigeroLinearConstraint<Field>> a;
-    std::vector<Elt> b;
     size_t ci = ZkCommon<Field>::verifier_constraints(c_, W, zkp.proof, &aux, a,
-                                                      b, tsp, n_witness_, f_);
+                                                      linear_constraint_rhs_, tsp, n_witness_, f_);
     log(INFO, "ZK constraints done");
 
     // 6. Produce proof over commitment.
@@ -193,6 +192,7 @@ class ZkProver : public ProverLayers<Field> {
   const ReedSolomonFactory& rsf_;
   Proof<Field> pad_;
   std::vector<Elt> witness_;
+  std::vector<Elt> linear_constraint_rhs_;
   std::vector<LigeroQuadraticConstraint> lqc_;
   std::unique_ptr<LigeroProver<Field, ReedSolomonFactory>> lp_;
 };
