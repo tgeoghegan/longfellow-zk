@@ -289,6 +289,41 @@ TEST(ZK, Rfc_testvector1) {
   filler.push_back(Fg.of_scalar(5));
   filler.push_back(Fg.of_scalar(6));
 
+  printf("\"valid_inputs\": [\n");
+    std::vector<uint8_t> buf(Fg.kBytes);
+    // skip the 1 prepended to inputs
+    for (size_t i = 1; i < W.v_.size(); i++) {
+      Fg.to_bytes_field(&buf[0], W.v_[i]);
+      printf("    \"");
+      dump("", buf);
+      printf("\"");
+      if (i + 1 != W.v_.size()) {
+        printf(",");
+      }
+      printf("\n");
+    }
+    printf("],\n"); // valid_inputs
+
+    printf("\"invalid_inputs\": [\n");
+    // skip the 1 prepended to inputs
+    for (size_t i = 1; i < W.v_.size(); i++) {
+      bool is_last = i + 1 == W.v_.size();
+      auto elt = W.v_[i];
+      if (is_last) {
+        // tamper the last input so that the MAC won't validate
+        Fg.add(elt, Fg.one());
+      }
+      Fg.to_bytes_field(&buf[0], elt);
+      printf("    \"");
+      dump("", buf);
+      printf("\"");
+      if (!is_last) {
+        printf(",");
+      }
+      printf("\n");
+    }
+    printf("],\n"); // invalid_inputs
+
   Transcript transcript((uint8_t*)"test", 4);
   TestRandomEngine rng;
 
@@ -320,7 +355,6 @@ TEST(ZK, Rfc_testvector1) {
 
   printf("\"constraints\": {\n");
   printf("    \"linear_rhs\": [\n");
-    std::vector<uint8_t> buf(16, 0);
   for (size_t i = 0; i < prover.linear_constraint_rhs_.size(); i++) {
     Fg.to_bytes_field(&buf[0], prover.linear_constraint_rhs_[i]);
     printf("        \"");
