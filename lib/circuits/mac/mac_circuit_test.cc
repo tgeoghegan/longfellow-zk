@@ -217,6 +217,7 @@ TEST(MAC, full_circuit_GF2_128) {
   cr.to_bytes(*circuit, bytes);
   dump_to_file(circuit_serialization, bytes);
 
+  fprintf(test_vector, "{\n");
   fprintf(test_vector, "\"description\": \"Evaluates a MAC\",\n");
   fprintf(test_vector, "\"field\": %d,\n", GF2_128_ID);
   fprintf(test_vector, "\"depth\": %zu,\n", circuit->nl + 1);
@@ -226,7 +227,7 @@ TEST(MAC, full_circuit_GF2_128) {
   // Witness-creation time + fill inputs
   using gf2k = f_128::Elt;
   MACReference<f_128> mac_ref;
-  SecureRandomEngine rng;
+  TestRandomEngine rng;
 
   uint8_t test_msg[32];
 
@@ -277,17 +278,20 @@ TEST(MAC, full_circuit_GF2_128) {
     fprintf(test_vector, "\"invalid_inputs\": [\n");
     // skip the 1 prepended to inputs
     for (size_t i = 1; i < W->v_.size(); i++) {
-      bool is_last = i + 1 == W->v_.size();
       auto elt = W->v_[i];
-      if (is_last) {
-        // tamper the last input so that the MAC won't validate
-        F.add(elt, F.one());
+      // Flip the bits of the message so that the MAC won't validate
+      if (i < 256) {
+        if (elt == F.one()) {
+          F.to_bytes_field(&buf[0], F.zero());
+        } else {
+          F.to_bytes_field(&buf[0], F.one());
+        }
       }
-      F.to_bytes_field(&buf[0], elt);
       fprintf(test_vector, "    \"");
       dump_hex_to_file(test_vector, buf);
       fprintf(test_vector, "\"");
-      if (!is_last) {
+
+      if (i + 1 != W->v_.size()) {
         fprintf(test_vector, ",");
       }
       fprintf(test_vector, "\n");
@@ -352,6 +356,8 @@ TEST(MAC, full_circuit_GF2_128) {
     }
     fprintf(test_vector, "    ]\n"); // quadratic
     fprintf(test_vector, "}\n"); // constraints
+
+    fprintf(test_vector, "}\n"); // JSON document
 
     std::vector<uint8_t> ligero_bytes;
     mac_zk_proof.write_com_proof(mac_zk_proof.com_proof, ligero_bytes, F);
