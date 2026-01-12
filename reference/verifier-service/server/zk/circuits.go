@@ -38,6 +38,7 @@ type CircuitInfo struct {
 }
 
 type ZKSpec struct {
+	Id            string `json:"id"`
 	System        string `json:"system"`
 	CircuitHash   string `json:"circuit_hash"`
 	NumAttributes uint   `json:"num_attributes"`

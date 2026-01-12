@@ -137,7 +137,11 @@ TEST_F(MdocZKTest, one_claim) {
       // AAMVA DHS_compliance field.
       {"DHS_compliance-mdoc[10]",
        {test::aamva_dhs_compliance},
-       &mdoc_tests[10]}};
+       &mdoc_tests[10]},
+      // Sparkasse Age Assurance test.
+      {"Sparkasse_Age-mdoc[11]",
+       {test::age_over_18},
+       &mdoc_tests[11]}};
 
   for (size_t i = 0; i < sizeof(tests) / sizeof(tests[0]); ++i) {
     run_test(tests[i].test_name, 1, tests[i].claims, tests[i].mdoc);

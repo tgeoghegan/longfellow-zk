@@ -49,7 +49,7 @@ func TestLoadIssuerRootCA(t *testing.T) {
 	}
 }
 
-func TestProcessDeviceResponse(t *testing.T) {
+func TestProcessDeviceResponseOriginal(t *testing.T) {
 	ca, _, err := generateTestCA()
 	if err != nil {
 		t.Fatalf("failed to generate test CA: %v", err)
@@ -84,7 +84,7 @@ func TestProcessDeviceResponse(t *testing.T) {
 		t.Fatalf("failed to marshal device response: %v", err)
 	}
 
-	_, err = ProcessDeviceResponse(respBytes)
+	_, err = ProcessDeviceResponseOriginal(respBytes)
 	if err != nil {
 		t.Errorf("ProcessDeviceResponse() error = %v, wantErr %v", err, false)
 	}
@@ -125,10 +125,103 @@ func TestValidateIssuerKey(t *testing.T) {
 		t.Fatalf("failed to create test zk document: %v", err)
 	}
 
-	_, _, err = validateIssuerKey(doc)
+	x509b, _ := doc.MsoX5chain.Unprotected[X5ChainIndex]
+	_, _, err = validateIssuerKey(x509b)
 	if err != nil {
 		t.Errorf("validateIssuerKey() error = %v, wantErr %v", err, false)
 	}
+}
+
+func TestProcessDeviceResponseISO(t *testing.T) {
+	IssuerRoots = x509.NewCertPool()
+	caCert, caKey, err := generateTestCA()
+	if err != nil {
+		t.Fatalf("failed to generate test CA: %v", err)
+	}
+	pemBlock := &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caCert.Raw,
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+	if err := LoadIssuerRootCA(pemBytes); err != nil {
+		t.Fatalf("failed to load issuer root CA: %v", err)
+	}
+
+	leafCert, _, err := createLeafCert(caCert, caKey)
+	if err != nil {
+		t.Fatalf("failed to create leaf cert: %v", err)
+	}
+
+	issuerSigned := IssuerSigned{
+		"test_namespace": []zkSignedItem{
+			{
+				ElementIdentifier: "test_identifier",
+				ElementValue:      cbor.RawMessage([]byte{0x81, 0x45, 0x68, 0x65, 0x6c, 0x6c, 0x6f}), // ["hello"]
+			},
+		},
+	}
+
+	t.Run("single cert", func(t *testing.T) {
+		docData := &zkDocumentDataIso_1cert{
+			DocType:      "test_doctype",
+			ZkSystemId:   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			IssuerSigned: issuerSigned,
+			MsoX5chain:   leafCert.Raw,
+			Timestamp:    "2025-01-01T00:00:00Z",
+		}
+		docDataBytes, err := cbor.Marshal(docData)
+		if err != nil {
+			t.Fatalf("failed to marshal doc data: %v", err)
+		}
+		zkDoc := zkDocumentIso{
+			DocumentData: docDataBytes,
+			Proof:        []byte("test_proof"),
+		}
+		resp := &zkDeviceResponseIso{
+			Version:     "1.0",
+			ZKDocuments: []zkDocumentIso{zkDoc},
+			Status:      0,
+		}
+		respBytes, err := cbor.Marshal(resp)
+		if err != nil {
+			t.Fatalf("failed to marshal response: %v", err)
+		}
+
+		if _, err := ProcessDeviceResponseISO(respBytes); err != nil {
+			t.Errorf("ProcessDeviceResponseISO() with single cert error = %v, wantErr %v", err, false)
+		}
+	})
+
+	t.Run("array of certs", func(t *testing.T) {
+		docData := &zkDocumentDataIso_certs{
+			DocType:      "test_doctype",
+			ZkSystemId:   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			IssuerSigned: issuerSigned,
+			MsoX5chain:   [][]byte{leafCert.Raw},
+			Timestamp:    "2025-01-01T00:00:00Z",
+		}
+		docDataBytes, err := cbor.Marshal(docData)
+		if err != nil {
+			t.Fatalf("failed to marshal doc data: %v", err)
+		}
+		zkDoc := zkDocumentIso{
+			DocumentData: docDataBytes,
+			Proof:        []byte("test_proof"),
+		}
+		resp := &zkDeviceResponseIso{
+			Version:     "1.0",
+			ZKDocuments: []zkDocumentIso{zkDoc},
+			Status:      0,
+		}
+		respBytes, err := cbor.Marshal(resp)
+		if err != nil {
+			t.Fatalf("failed to marshal response: %v", err)
+		}
+
+		if _, err := ProcessDeviceResponseISO(respBytes); err != nil {
+			t.Errorf("ProcessDeviceResponseISO() with array of certs error = %v, wantErr %v", err, false)
+		}
+	})
 }
 
 func generateTestCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
@@ -160,6 +253,34 @@ func generateTestCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 		return nil, nil, err
 	}
 
+	return cert, priv, nil
+}
+
+func createLeafCert(caCert *x509.Certificate, caKey *ecdsa.PrivateKey) (*x509.Certificate, *ecdsa.PrivateKey, error) {
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(2),
+		Subject: pkix.Name{
+			Organization: []string{"Test Cert"},
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(time.Hour),
+		KeyUsage:  x509.KeyUsageDigitalSignature,
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, caCert, &priv.PublicKey, caKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cert, err := x509.ParseCertificate(derBytes)
+	if err != nil {
+		return nil, nil, err
+	}
 	return cert, priv, nil
 }
 

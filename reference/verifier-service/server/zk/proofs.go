@@ -116,6 +116,7 @@ func GetZKSpecs() []ZKSpec {
 	for i := 0; i < int(C.kNumZkSpecs); i++ {
 		ss := C.kZkSpecs[i]
 		resp[i] = ZKSpec{
+			Id:            C.GoString(&ss.circuit_hash[0]),
 			System:        C.GoString(ss.system),
 			CircuitHash:   C.GoString(&ss.circuit_hash[0]),
 			NumAttributes: uint(ss.num_attributes),

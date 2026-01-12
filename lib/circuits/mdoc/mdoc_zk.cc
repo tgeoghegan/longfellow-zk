@@ -57,9 +57,8 @@
 // dense witness array.
 // ex: numAttrs = 1, this function returns (1*768 + 8) + 161
 size_t getHashMacIndex(size_t numAttrs, size_t version) {
-  // The conditional accounts for the length of the attribute field that is
-  // added in version 4.
-  return numAttrs * 8 * (96 + (version >= 4 ? 1 : 0)) + 160 + 1;
+  // The length of the attribute field that is added in version 4.
+  return numAttrs * 8 * (96 + 1) + 160 + 1;
 }
 
 namespace proofs {

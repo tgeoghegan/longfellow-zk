@@ -182,7 +182,7 @@ std::unique_ptr<Quad<Field>> addE_quad1() {
 }
 
 std::unique_ptr<Circuit<Field>> addE_circuit(size_t logc, corner_t nc) {
-  std::unique_ptr<Circuit<Field>> c(new Circuit<Field>);
+  std::unique_ptr<Circuit<Field>> c = std::make_unique<Circuit<Field>>();
   *c = Circuit<Field>{
       .nv = 3,  // outputs
       .logv = 2,
@@ -291,7 +291,7 @@ std::unique_ptr<Quad<Field>> random_quad(index_t n, corner_t nv, corner_t nw) {
 }
 
 std::unique_ptr<Circuit<Field>> random_circuit() {
-  std::unique_ptr<Circuit<Field>> CIRCUIT(new Circuit<Field>);
+  std::unique_ptr<Circuit<Field>> CIRCUIT = std::make_unique<Circuit<Field>>();
   *CIRCUIT = Circuit<Field>{
       .nv = around(7),
       .logv = 4,

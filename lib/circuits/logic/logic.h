@@ -980,8 +980,6 @@ class Logic {
   }
   void output(const EltW& x, size_t i) const { bk_->output_wire(x, i); }
   void output(const BitW& x, size_t i) const { output(eval(x), i); }
-  size_t wire_id(const BitW& v) const { return bk_->wire_id(v.x); }
-  size_t wire_id(const EltW& x) const { return bk_->wire_id(x); }
 
   template <size_t N>
   bitvec<N> vinput() const {

@@ -489,11 +489,6 @@ TEST(MSO, Example2Real) {
   size_t org_lookup_tag = 4;
 
   // COMPILE TIME.
-  // The output of COMPILE-TIME is the circuit as well as some
-  // labeling of the input wires so that they can later be filled
-  // with concrete values.  Rather than complicating the test
-  // by "exporting" the map via calls to LC.wire_id(), we rely
-  // on the implicit creation order as wire id.
   size_t ninput;
   std::unique_ptr<Circuit<Field>> CIRCUIT;
   size_t offset = n - input_len;

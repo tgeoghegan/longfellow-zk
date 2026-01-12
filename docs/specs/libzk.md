@@ -250,7 +250,7 @@ pseudo-random bytes from the same stream.
 ## Generating challenges
 
 When the prover has finished sending messages for a round in the interactive
-protocol, it can make a sequence of calls to `transcript.generate_{nat,field_element,challenge}` to obtain the Verifier's random challenges.   
+protocol, it can make a sequence of calls to `transcript.generate_{nat,nats_wo_replacement,field_element,challenge}` to obtain the Verifier's random challenges.   
 
 The `bytes` method of the FSPRF is used by the transcript object to sample pseudo-random field elements and
 pseudo-random integers via rejection sampling as follows:
@@ -258,21 +258,28 @@ pseudo-random integers via rejection sampling as follows:
 * `transcript.generate_nat(m)` generates a random natural between `0` and
   `m-1` inclusive, as follows.
   
-  Let `l` be minimal such that `2^l >= m`.  Let `nbytes = ceil(l / 8)`.
-  Let `b = fs.bytes(nbytes)`.  Interpret bytes `b` as a little-endian
-  integer `k`.  Let `r = k mod 2^l`, i.e., mask off the high `8 * nbytes - l`
-  bits of `k`.  If `r < m` return `r`, otherwise start over.
+	Let `l` be minimal such that `2^l >= m`.  Let `nbytes = ceil(l / 8)`.
+	Let `b = fs.bytes(nbytes)`.  Interpret bytes `b` as a little-endian integer `k`.  Let `r = k mod 2^l`, i.e., mask off the high `8 * nbytes - l` bits of `k`.  If `r < m` return `r`, otherwise start over.
+
+* `transcript.generate_nats_wo_replacement(m, n)` generates a list of `n` different, random natural numbers between `0` and `m - 1` inclusive.  There are many equivalent algorithms to perform this step.  The following approach requires only `n` calls to the `generate_nat` method.
+
+```
+	def generate_nats_wo_replacement(m, n):
+	    # assert(m > n)
+	    A = list(range(0, m))
+	    for i in range(0, n):
+	        j = i + generate_nat(m - i)
+	        A[i], A[j] = A[j], A[i]
+	    return A[:n]	
+``` 
     
 * `transcript.generate_field_element(F)` generates a field element.
 
-  If the field `F` is `Z / (p)`, return `generate_nat(fs, p)` interpreted
-  as a field element.
+	If the field `F` is `Z / (p)`, return `generate_nat(fs, p)` interpreted as a field element.
 
-  If the field is `GF(2)[X] / (X^128 + X^7 + X^2 + X + 1)` obtain 
-  `b = fs.bytes(16)` and interpret the 128 bits of `b` as a little-endian
-  polynomial.  This document does not specify the generation of
-  a field element for other binary fields, but extensions SHOULD follow
-  a similar pattern.
+	If the field is `GF(2)[X] / (X^128 + X^7 + X^2 + X + 1)`, obtain `b = fs.bytes(16)` and interpret the 128 bits of `b` as a little-endian polynomial.
+
+  	This document does not specify the generation of a field element for other binary fields, but extensions SHOULD follow a similar pattern.
 
 * `a = transcript.generate_challenge(F, n)` generates an array of `n`
   field elements in the straightforward way: for `0 <= i < n`
@@ -376,7 +383,7 @@ GF(2^16^)                     |   0x05
 2^64 - 59                     |   0x07
 2^64 - 2^32 + 1               |   0x08
 F_{2^64 - 59}^2^              |   0x09
-secp256                       |   0x0a
+secp256k1                     |   0x0a
 F_{2^{0--15}^-byte prime}^2^  |   0xe{0--f}
 F_{2^{0--15}^-byte prime}     |   0xf{0--f}
 Table: Finite field identifiers.

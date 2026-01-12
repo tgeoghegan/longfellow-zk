@@ -432,9 +432,7 @@ void fill_byte(std::vector<typename Field::Elt>& v, uint8_t b, size_t i,
 template <class Field>
 bool fill_attribute(DenseFiller<Field>& filler, const RequestedAttribute& attr,
                     const Field& F, size_t version) {
-  // In version 3, the attribute is encoded as the raw cbor string that
-  // included <name of identifier> <elementValue> <attributeValue>.
-  // In version 4, the attribute is encoded as
+  // In version >= 4, the attribute is encoded as
   // <len(identifier)> <name of identifier> <elementValue> <attributeValue>.
   // This extra length field distinguishes the two attributes:
   //   "aamva/domestic_driving_privileges" from "iso/driving_privileges." No
@@ -445,10 +443,8 @@ bool fill_attribute(DenseFiller<Field>& filler, const RequestedAttribute& attr,
   std::vector<uint8_t> vbuf;
   std::vector<typename Field::Elt> v(96 * 8, F.zero());
 
-  if (version >= 4) {
-    // Append the length of the elementIdentifier.
-    append_text_len(vbuf, attr.id_len);
-  }
+  // Append the length of the elementIdentifier.
+  append_text_len(vbuf, attr.id_len);
   vbuf.insert(vbuf.end(), attr.id, attr.id + attr.id_len);
   append_text_len(vbuf, 12);  // len of "elementValue"
   const char* ev = "elementValue";
@@ -466,10 +462,7 @@ bool fill_attribute(DenseFiller<Field>& filler, const RequestedAttribute& attr,
     fill_byte(v, vbuf[j], len, F);
   }
   filler.push_back(v);
-  if (version >= 4) {
-    // In version 4, add the OpenedAttribute.len field.
-    filler.push_back(len, 8, F);
-  }
+  filler.push_back(len, 8, F);
   return true;
 }
 
@@ -650,6 +643,8 @@ class MdocHashWitness {
       return false;
     }
 
+    check(version >= 4, "Version <4 is not supported");
+
     std::vector<uint8_t> buf;
     if (pm_.t_mso_.len >= kMaxSHABlocks * 64 - 9 - kCose1PrefixLen) {
       log(ERROR, "tagged mso is too big: %zu", pm_.t_mso_.len);
@@ -697,15 +692,12 @@ class MdocHashWitness {
               fa.tag_len, &fa.doc[fa.tag_ind], 2, attr_n_[i],
               &attr_bytes_[i][0], &atw_[i][0]);
           attr_mso_[i] = fa.mso;
-          attr_ei_[i].offset = fa.id_ind - fa.tag_ind;
-          if (version >= 4) {
-            // In version 4, the attribute id is encoded as the length of the
-            // id followed by the id.  The witness starts at the id, so we
-            // subtract 1 or 2 to get the offset, depending on the id length.
+          // In version >= 4, the attribute id is encoded as the length of the
+          // id followed by the id.  The witness starts at the id, so we
+          // subtract 1 or 2 to get the offset, depending on the id length.
+          attr_ei_[i].offset = fa.id_ind - fa.tag_ind - 1;
+          if (fa.id_len > 23) {
             attr_ei_[i].offset -= 1;
-            if (fa.id_len > 23) {
-              attr_ei_[i].offset -= 1;
-            }
           }
           attr_ei_[i].len = fa.witness_length(attrs[i]);
           attr_ev_[i].offset = fa.val_ind - fa.tag_ind;
